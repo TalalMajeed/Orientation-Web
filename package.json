@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "jest",
-    "vercel-build": "node secrets.js && next build"
+    "test": "jest"
   },
   "dependencies": {
     "@azure/msal-node": "^5.4.0",
