@@ -28,15 +28,12 @@ async function fetchSecrets() {
       .map(([key, value]) => `${key}=${value}`)
       .join('\n');
 
-    const targetDir = path.join(__dirname, 'web');
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-    }
+    const targetDir = __dirname;
 
     fs.writeFileSync(path.join(targetDir, 'secrets.json'), JSON.stringify(data, null, 2));
     fs.writeFileSync(path.join(targetDir, '.env'), envLines);
 
-    console.log('Successfully generated secrets.json and .env inside /web');
+    console.log('Successfully generated secrets.json and .env inside the root directory');
   } catch (error) {
     console.error('Failed to fetch secrets:', error);
     process.exit(1);
