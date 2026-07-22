@@ -4,8 +4,8 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_DURATION_MS,
   createSessionToken,
-  verifyHrCredentials,
-} from "@/services/hr/session";
+  verifyCredentials,
+} from "@/services/auth/session";
 
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -32,16 +32,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!verifyHrCredentials(username, password)) {
+  const role = verifyCredentials(username, password);
+
+  if (!role) {
     return NextResponse.json(
       { error: "Invalid username or password" },
       { status: 401 }
     );
   }
 
-  const response = NextResponse.json({ message: "Logged in" }, { status: 200 });
+  const response = NextResponse.json({ role }, { status: 200 });
 
-  response.cookies.set(SESSION_COOKIE_NAME, createSessionToken(), {
+  response.cookies.set(SESSION_COOKIE_NAME, createSessionToken(role), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

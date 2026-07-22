@@ -22,7 +22,7 @@ export default function Manager() {
     const response = await fetch("/api/v1/hr/links");
 
     if (response.status === 401) {
-      router.push("/hr/login");
+      router.push("/login?next=/hr");
       return;
     }
 
@@ -118,8 +118,8 @@ export default function Manager() {
   }
 
   async function handleLogout() {
-    await fetch("/api/v1/hr/login", { method: "DELETE" });
-    router.push("/hr/login");
+    await fetch("/api/v1/auth/login", { method: "DELETE" });
+    router.push("/login?next=/hr");
     router.refresh();
   }
 

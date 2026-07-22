@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isHrRequestAuthenticated } from "@/services/hr/session";
+import { requireRole } from "@/services/auth/guard";
 import {
   InvalidUrlError,
   ShortLinkNotFoundError,
@@ -11,8 +11,10 @@ import {
 type RouteContext = { params: Promise<{ shortId: string }> };
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
-  if (!isHrRequestAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requireRole(request, "admin");
+
+  if (denied) {
+    return denied;
   }
 
   const { shortId } = await params;
@@ -52,8 +54,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteContext) {
-  if (!isHrRequestAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requireRole(request, "admin");
+
+  if (denied) {
+    return denied;
   }
 
   const { shortId } = await params;

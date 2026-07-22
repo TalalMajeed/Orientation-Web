@@ -1,17 +1,21 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/services/hr/session";
+import {
+  SESSION_COOKIE_NAME,
+  hasRole,
+  verifySessionToken,
+} from "@/services/auth/session";
 import Manager from "@/components/hr/manager";
 
 export default async function HrPage() {
   const cookieStore = await cookies();
-  const isAuthenticated = verifySessionToken(
+  const session = verifySessionToken(
     cookieStore.get(SESSION_COOKIE_NAME)?.value
   );
 
-  if (!isAuthenticated) {
-    redirect("/hr/login");
+  if (!hasRole(session, "admin")) {
+    redirect("/login?next=/hr");
   }
 
   return (

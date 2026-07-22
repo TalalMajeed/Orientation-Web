@@ -3,27 +3,51 @@ import "server-only";
 import { ConfidentialClientApplication } from "@azure/msal-node";
 import { Client } from "@microsoft/microsoft-graph-client";
 
-const tenantId = process.env.TENANT_ID;
-const clientId = process.env.CLIENT_ID;
-const clientSecret = process.env.CLIENT_SECRET;
-const sender = process.env.MS_GRAPH_SENDER;
-
-if (!tenantId || !clientId || !clientSecret) {
-  throw new Error(
-    "Missing required environment variables: TENANT_ID, CLIENT_ID, CLIENT_SECRET"
-  );
+interface GraphConfig {
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
 }
 
-const msalApp = new ConfidentialClientApplication({
-  auth: {
-    clientId,
-    clientSecret,
-    authority: `https://login.microsoftonline.com/${tenantId}`,
-  },
-});
+/**
+ * Read lazily rather than at import time: a missing variable should fail the
+ * one request that sends mail, not every route that happens to import this
+ * module.
+ */
+function getConfig(): GraphConfig {
+  const tenantId = process.env.TENANT_ID;
+  const clientId = process.env.CLIENT_ID;
+  const clientSecret = process.env.CLIENT_SECRET;
+
+  if (!tenantId || !clientId || !clientSecret) {
+    throw new Error(
+      "Missing required environment variables: TENANT_ID, CLIENT_ID, CLIENT_SECRET"
+    );
+  }
+
+  return { tenantId, clientId, clientSecret };
+}
+
+let msalApp: ConfidentialClientApplication | undefined;
+
+function getMsalApp(): ConfidentialClientApplication {
+  if (!msalApp) {
+    const { tenantId, clientId, clientSecret } = getConfig();
+
+    msalApp = new ConfidentialClientApplication({
+      auth: {
+        clientId,
+        clientSecret,
+        authority: `https://login.microsoftonline.com/${tenantId}`,
+      },
+    });
+  }
+
+  return msalApp;
+}
 
 async function getAccessToken(): Promise<string> {
-  const result = await msalApp.acquireTokenByClientCredential({
+  const result = await getMsalApp().acquireTokenByClientCredential({
     scopes: ["https://graph.microsoft.com/.default"],
   });
 
@@ -44,21 +68,58 @@ function getGraphClient(): Client {
   });
 }
 
+export interface MailAttachment {
+  name: string;
+  contentType: string;
+  /** Base64, without a `data:` prefix. */
+  contentBytes: string;
+  /**
+   * Set alongside isInline to reference the file from the body as
+   * `<img src="cid:the-content-id">`. Gmail strips `src="data:..."`, so an
+   * inline image has to arrive as a CID attachment to render at all.
+   */
+  contentId?: string;
+  isInline?: boolean;
+}
+
 export interface SendMailOptions {
   to: string | string[];
   subject: string;
   body: string;
   contentType?: "Text" | "HTML";
+  attachments?: MailAttachment[];
 }
 
-// Tentative: app-only "send as" mailbox via Graph /sendMail. The mailbox in
-// MS_GRAPH_SENDER must grant this app registration the Mail.Send application permission.
+function toGraphAttachment(attachment: MailAttachment) {
+  return {
+    "@odata.type": "#microsoft.graph.fileAttachment",
+    name: attachment.name,
+    contentType: attachment.contentType,
+    contentBytes: attachment.contentBytes,
+    ...(attachment.contentId ? { contentId: attachment.contentId } : {}),
+    ...(attachment.isInline ? { isInline: true } : {}),
+  };
+}
+
+/** Throttling and transient outages deserve a retry, not a spent attempt. */
+export function isTransientMailError(error: unknown): boolean {
+  const statusCode = (error as { statusCode?: unknown })?.statusCode;
+
+  return statusCode === 429 || statusCode === 503 || statusCode === 504;
+}
+
+// App-only "send as" mailbox via Graph /sendMail. The mailbox in
+// MS_GRAPH_SENDER must grant this app registration the Mail.Send application
+// permission.
 export async function sendMail({
   to,
   subject,
   body,
   contentType = "HTML",
+  attachments = [],
 }: SendMailOptions): Promise<void> {
+  const sender = process.env.MS_GRAPH_SENDER;
+
   if (!sender) {
     throw new Error("Missing required environment variable: MS_GRAPH_SENDER");
   }
@@ -74,6 +135,9 @@ export async function sendMail({
       subject,
       body: { contentType, content: body },
       toRecipients: recipients,
+      ...(attachments.length
+        ? { attachments: attachments.map(toGraphAttachment) }
+        : {}),
     },
     saveToSentItems: true,
   });

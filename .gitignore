@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# secrets.js writes every production secret here; .env* does not cover it
+secrets.json
+
 # vercel
 .vercel
 

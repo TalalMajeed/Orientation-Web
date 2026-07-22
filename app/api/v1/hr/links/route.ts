@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isHrRequestAuthenticated } from "@/services/hr/session";
+import { requireRole } from "@/services/auth/guard";
 import {
   InvalidUrlError,
   createShortLink,
@@ -8,8 +8,10 @@ import {
 } from "@/services/hr/links";
 
 export async function GET(request: NextRequest) {
-  if (!isHrRequestAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requireRole(request, "admin");
+
+  if (denied) {
+    return denied;
   }
 
   const links = await listShortLinks();
@@ -18,8 +20,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isHrRequestAuthenticated(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requireRole(request, "admin");
+
+  if (denied) {
+    return denied;
   }
 
   let body: unknown;
