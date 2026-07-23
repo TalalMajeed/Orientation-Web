@@ -108,9 +108,18 @@ export function isTransientMailError(error: unknown): boolean {
   return statusCode === 429 || statusCode === 503 || statusCode === 504;
 }
 
-// App-only "send as" mailbox via Graph /sendMail. The mailbox in
-// MS_GRAPH_SENDER must grant this app registration the Mail.Send application
-// permission.
+/**
+ * App-only "send as" via Graph /sendMail: there is no signed-in user, so the
+ * request has to name the mailbox it speaks for.
+ *
+ * MS_GRAPH_SENDER must be a mailbox inside the Exchange
+ * ApplicationAccessPolicy scope for this app registration. Verified
+ * 2026-07-22 against the live tenant: of the four orientation mailboxes only
+ * HR@orientation.nust.edu.pk qualifies — info@, it@ and support@ all return
+ * ErrorAccessDenied "[RAOP] : Blocked by tenant configured AppOnly
+ * AccessPolicy settings". Moving to info@ needs IT to add it to the policy
+ * group first; run `npm run mail-check` to confirm.
+ */
 export async function sendMail({
   to,
   subject,
