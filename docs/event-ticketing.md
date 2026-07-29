@@ -40,10 +40,14 @@ Scale: **~500–2000 attendees, 1–2 gates.** Several orientation sessions
   arrives first. Soft enforcement (staff read the name off the panel) catches
   the careless case, not the deliberate one. Fine for orientation; revisit
   before reusing this for anything with paid or scarce seats.
-- **`sendMail` had never been executed before this work.** It now has
-  attachment support and is wired in, but the first real send is still the
-  first proof that the mailbox in `MS_GRAPH_SENDER` actually grants this app
-  registration the Mail.Send application permission.
+- **The mail path is proven end to end.** `Mail.Send` is granted to the app
+  registration, and real emails have been delivered from
+  `HR@orientation.nust.edu.pk` (2026-07-22) and `info@orientation.nust.edu.pk`
+  (2026-07-23). The remaining constraint is tenant-side: Exchange applies an
+  ApplicationAccessPolicy, so `MS_GRAPH_SENDER` must name a mailbox inside its
+  scope group or the send fails with `ErrorAccessDenied [RAOP]`. `it@` and
+  `support@` were blocked when last checked. Run `npm run mail-check` before
+  switching senders — no code change can work around that block.
 
 ---
 
