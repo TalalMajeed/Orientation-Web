@@ -49,9 +49,20 @@ function LoginForm() {
       const role = typeof data.role === "string" ? data.role : "admin";
       const next = safeNext(searchParams.get("next"));
 
-      // A scanner sent to an admin page would only bounce back here.
-      const destination =
-        role === "scanner" ? DEFAULT_LANDING.scanner : next ?? DEFAULT_LANDING.admin;
+      // A scanner sent to an admin page would only bounce back here, so they
+      // always land on /scan — but carry the reason, or the page they asked for
+      // silently vanishes and the link looks broken.
+      const scannerCanOpen =
+        next !== null && (next === "/scan" || next.startsWith("/scan/"));
+      let destination: string;
+
+      if (role !== "scanner") {
+        destination = next ?? DEFAULT_LANDING.admin;
+      } else if (next && !scannerCanOpen) {
+        destination = `${DEFAULT_LANDING.scanner}?denied=${encodeURIComponent(next)}`;
+      } else {
+        destination = DEFAULT_LANDING.scanner;
+      }
 
       router.push(destination);
       router.refresh();

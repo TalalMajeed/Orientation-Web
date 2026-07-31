@@ -28,6 +28,8 @@ Scale: **~500–2000 attendees, 1–2 gates.** Several orientation sessions
 | Bulk rows carry **no token** until send time | The raw token is never stored, so it cannot be recovered later — whoever mints a token must be the one that delivers it |
 | QR delivered as a CID inline attachment | Gmail strips `<img src="data:...">`. A data-URI QR renders as a broken image for a large share of attendees |
 | Bulk issue writes rows, a drain endpoint sends | 2000 mails under Graph throttling is >1h of wall clock — it cannot complete inside one request on any serverless host. `emailSentAt` doubles as the resume cursor |
+| The drain leases each row before sending | Two concurrent drains would otherwise both claim the same pending rows. A duplicate send is silent — minting appends to `tokenHashes`, so both QRs work and single-use still holds |
+| Tickets the drain gave up on are counted separately | They drop out of the queue depth, so without their own count the queue reads "0 waiting" while people are still owed a ticket |
 | Manual search + check-in at the gate | The brief has no answer for a dead phone or a QR that will not scan. Without it the queue stalls and staff start waving people through unlogged |
 | A `wrong_event` result | With several sessions, a Day 1 ticket at the Day 2 gate would otherwise read as a valid admission |
 | Offline mode **cut** | It deletes the guarantee the system exists for — two offline phones cannot see each other's scans. At 1–2 gates the fix is a mobile-data SIM and the manual fallback |
@@ -95,6 +97,7 @@ scripts/e2e.mjs             npm run e2e
   tokenHashes: [ sha256hex ],                // ABSENT until first mint
   status: 'issued' | 'used' | 'revoked',
   issuedAt, emailSentAt, emailError, emailAttempts,
+  sendingSince,                              // send lease; null when free
   usedAt, usedGate, usedVia, revokedAt }     // usedVia: 'scan' | 'manual'
 
 // scan_log
@@ -194,6 +197,41 @@ exactly where it stopped. `emailAttempts` bounds retries at
 `MAX_EMAIL_ATTEMPTS`, since each retry mints a fresh token; the resend button
 resets it. Throttling (429/503/504) stops the batch **without** spending an
 attempt.
+
+#### The send lease
+
+A drain **claims** each row before sending it (`claimUnsentTickets`), one
+`findOneAndUpdate` per ticket setting `sendingSince`. Without it, two drains —
+two open tabs, or a tab racing a scheduled job — read the same pending rows and
+email the same person twice. That failure is silent: minting *appends* to
+`tokenHashes`, so both QRs work and single-use still holds. Nothing downstream
+reveals the mistake.
+
+A lease older than `SEND_LEASE_MS` (5 minutes) is reclaimable, so a drain that
+dies mid-batch does not strand its rows. Long on purpose — the only cost of an
+over-long lease is a slow retry, while too short a lease re-creates the
+duplicate send for a batch that is merely slow. `markEmailSent`,
+`markEmailFailed`, `requeueTicketEmail`, and the throttle path all release the
+lease immediately, so the expiry window is a backstop rather than the norm.
+
+#### Failure visibility
+
+`countUnsentTickets` deliberately excludes tickets that have spent every
+attempt, so the queue depth alone is a trap: it reads **0 waiting** while people
+are still owed a ticket. `countUndeliverableTickets` is the counterweight, and
+both the Overview and the send queue show a red warning whenever it is non-zero,
+linking to `/event-tickets/list?filter=undelivered`.
+
+Each ticket carries a derived `delivery` state on its DTO — `sent`, `queued`,
+`retrying`, `undeliverable` — computed server-side because the retry cap lives
+in `tickets.ts`, which is `server-only`. The list distinguishes **Retrying**
+(the drain will come back to it) from **Never arrived** (it will not), because
+only the second needs a human. The CSV export carries both the state and the
+provider's error text.
+
+There is no external monitoring. Failures live in the ticket rows and are
+surfaced only in this UI — acceptable for a one-off event with an operator
+watching, and the first thing to revisit if this is reused.
 
 Email copy: holder name, event name / date / time / venue, the QR large on
 white, a line saying the ticket admits one person once and must not be shared,

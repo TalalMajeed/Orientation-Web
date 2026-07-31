@@ -8,7 +8,10 @@ import {
   readString,
   requireEventId,
 } from "@/services/tickets/request";
-import { countUnsentTickets } from "@/services/tickets/tickets";
+import {
+  countUndeliverableTickets,
+  countUnsentTickets,
+} from "@/services/tickets/tickets";
 
 const DEFAULT_BATCH = 10;
 const MAX_BATCH = 25;
@@ -39,9 +42,18 @@ export async function POST(request: NextRequest) {
   );
 
   const result = await drainOutbox(event.eventId, limit);
-  const remaining = await countUnsentTickets(event.eventId);
 
-  return NextResponse.json({ ...result, remaining }, { status: 200 });
+  // Reported together because `remaining` alone is a trap: it drops tickets the
+  // drain has given up on, so a queue that reads 0 can still owe people a mail.
+  const [remaining, undeliverable] = await Promise.all([
+    countUnsentTickets(event.eventId),
+    countUndeliverableTickets(event.eventId),
+  ]);
+
+  return NextResponse.json(
+    { ...result, remaining, undeliverable },
+    { status: 200 }
+  );
 }
 
 export async function GET(request: NextRequest) {
@@ -57,8 +69,10 @@ export async function GET(request: NextRequest) {
     return event.response;
   }
 
-  return NextResponse.json(
-    { remaining: await countUnsentTickets(event.eventId) },
-    { status: 200 }
-  );
+  const [remaining, undeliverable] = await Promise.all([
+    countUnsentTickets(event.eventId),
+    countUndeliverableTickets(event.eventId),
+  ]);
+
+  return NextResponse.json({ remaining, undeliverable }, { status: 200 });
 }

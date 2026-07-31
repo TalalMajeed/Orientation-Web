@@ -12,6 +12,8 @@ interface Stats {
   issued: number;
   used: number;
   revoked: number;
+  unsent: number;
+  undeliverable: number;
 }
 
 export default function Overview() {
@@ -129,6 +131,30 @@ export default function Overview() {
           {unsent} ticket{unsent === 1 ? "" : "s"} still waiting to be emailed.{" "}
           <Link href="/event-tickets/issue" className="font-medium underline">
             Send them
+          </Link>
+        </div>
+      )}
+
+      {/*
+        The queue depth above excludes these, so without their own warning they
+        are invisible: sending finishes, the counter reads zero, and nobody knows
+        anyone was missed until they turn up at the gate.
+      */}
+      {stats && stats.undeliverable > 0 && (
+        <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+          <strong className="font-semibold">
+            {stats.undeliverable} ticket{stats.undeliverable === 1 ? "" : "s"}{" "}
+            could not be emailed
+          </strong>{" "}
+          and sending has stopped trying. {stats.undeliverable === 1
+            ? "That person has"
+            : "Those people have"}{" "}
+          no ticket — usually a mistyped address.{" "}
+          <Link
+            href="/event-tickets/list?filter=undelivered"
+            className="font-medium underline"
+          >
+            See who
           </Link>
         </div>
       )}

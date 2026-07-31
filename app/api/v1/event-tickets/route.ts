@@ -17,15 +17,23 @@ import {
   listTickets,
   markEmailFailed,
   markEmailSent,
+  type DeliveryFilter,
 } from "@/services/tickets/tickets";
 import type { TicketStatus } from "@/services/tickets/types";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STATUSES: TicketStatus[] = ["issued", "used", "revoked"];
+const DELIVERIES: DeliveryFilter[] = ["undelivered", "undeliverable"];
 
 function readStatus(value: string | null): TicketStatus | undefined {
   return STATUSES.includes(value as TicketStatus)
     ? (value as TicketStatus)
+    : undefined;
+}
+
+function readDelivery(value: string | null): DeliveryFilter | undefined {
+  return DELIVERIES.includes(value as DeliveryFilter)
+    ? (value as DeliveryFilter)
     : undefined;
 }
 
@@ -48,6 +56,7 @@ export async function GET(request: NextRequest) {
       eventId: event.eventId,
       search: params.get("search") ?? undefined,
       status: readStatus(params.get("status")),
+      delivery: readDelivery(params.get("delivery")),
       page: Number(params.get("page") ?? 1),
     }),
     getTicketStats(event.eventId),

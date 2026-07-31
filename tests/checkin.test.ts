@@ -447,8 +447,8 @@ describe("outbox", () => {
       });
     }
 
-    const firstBatch = await tickets.listUnsentTickets(eventId, 2);
-    expect(firstBatch).toHaveLength(2);
+    const firstBatch = await tickets.claimUnsentTickets(eventId, 2);
+    expect(firstBatch.map((doc) => doc.holderName)).toEqual(["A", "B"]);
 
     for (const doc of firstBatch) {
       await tickets.markEmailSent(doc._id);
@@ -489,6 +489,262 @@ describe("outbox", () => {
     await tickets.revokeTicket(events.toObjectId(ticket.id)!);
 
     await expect(tickets.countUnsentTickets(eventId)).resolves.toBe(0);
+  });
+});
+
+/**
+ * The lease is what stops two drains — two open tabs, or a tab racing a
+ * scheduled job — from emailing the same person twice. Minting appends to
+ * tokenHashes rather than replacing, so a duplicate send is silent: both QRs
+ * work, and single-use still holds, so nothing downstream reveals the mistake.
+ */
+describe("send lease", () => {
+  type EventId = Parameters<TicketsModule["claimUnsentTickets"]>[0];
+
+  async function bulkRoster(eventId: EventId, names: string[]) {
+    for (const name of names) {
+      await tickets.issueTicket({
+        eventId,
+        holderName: name,
+        email: `${name.toLowerCase()}@nust.edu.pk`,
+        mintToken: false,
+      });
+    }
+  }
+
+  it("never hands the same ticket to two concurrent drains", async () => {
+    const eventId = await makeEvent();
+    await bulkRoster(eventId, ["A", "B", "C", "D"]);
+
+    const [first, second] = await Promise.all([
+      tickets.claimUnsentTickets(eventId, 4),
+      tickets.claimUnsentTickets(eventId, 4),
+    ]);
+
+    const ids = [...first, ...second].map((doc) => doc._id.toHexString());
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toHaveLength(4);
+  });
+
+  it("does not re-offer a ticket that is already in flight", async () => {
+    const eventId = await makeEvent();
+    await bulkRoster(eventId, ["A", "B"]);
+
+    const claimed = await tickets.claimUnsentTickets(eventId, 2);
+    expect(claimed).toHaveLength(2);
+
+    await expect(tickets.claimUnsentTickets(eventId, 2)).resolves.toHaveLength(0);
+
+    // Still owed an email, though — an in-flight ticket is not a sent one.
+    await expect(tickets.countUnsentTickets(eventId)).resolves.toBe(2);
+  });
+
+  it("reclaims a lease left behind by a drain that died", async () => {
+    const eventId = await makeEvent();
+    await bulkRoster(eventId, ["Stranded"]);
+
+    const [claimed] = await tickets.claimUnsentTickets(eventId, 1);
+    const ticketsCol = await db.ticketsCollection();
+
+    // Simulates the crash: the row stays claimed and nothing ever releases it.
+    await ticketsCol.updateOne(
+      { _id: claimed._id },
+      {
+        $set: {
+          sendingSince: new Date(Date.now() - tickets.SEND_LEASE_MS - 1_000),
+        },
+      }
+    );
+
+    const reclaimed = await tickets.claimUnsentTickets(eventId, 1);
+
+    expect(reclaimed.map((doc) => doc._id.toHexString())).toEqual([
+      claimed._id.toHexString(),
+    ]);
+  });
+
+  it("claims a row written before the lease field existed", async () => {
+    const eventId = await makeEvent();
+    await bulkRoster(eventId, ["Legacy"]);
+
+    const ticketsCol = await db.ticketsCollection();
+    await ticketsCol.updateOne({ eventId }, { $unset: { sendingSince: "" } });
+
+    // Mongo matches a missing field as null, which is what makes the claim
+    // filter work on rows that predate this deployment — no migration needed.
+    await expect(tickets.claimUnsentTickets(eventId, 1)).resolves.toHaveLength(1);
+  });
+
+  it("frees a released claim for the next batch immediately", async () => {
+    const eventId = await makeEvent();
+    await bulkRoster(eventId, ["Throttled"]);
+
+    const claimed = await tickets.claimUnsentTickets(eventId, 1);
+    await tickets.releaseTicketClaims(claimed.map((doc) => doc._id));
+
+    await expect(tickets.claimUnsentTickets(eventId, 1)).resolves.toHaveLength(1);
+  });
+
+  it("frees a failed ticket for retry without waiting out the lease", async () => {
+    const eventId = await makeEvent();
+    await bulkRoster(eventId, ["Bounced"]);
+
+    const [claimed] = await tickets.claimUnsentTickets(eventId, 1);
+    await tickets.markEmailFailed(claimed._id, "mailbox full");
+
+    await expect(tickets.claimUnsentTickets(eventId, 1)).resolves.toHaveLength(1);
+  });
+
+  it("drops the lease once the ticket is sent", async () => {
+    const eventId = await makeEvent();
+    await bulkRoster(eventId, ["Delivered"]);
+
+    const [claimed] = await tickets.claimUnsentTickets(eventId, 1);
+    await tickets.markEmailSent(claimed._id);
+
+    const ticketsCol = await db.ticketsCollection();
+    const stored = await ticketsCol.findOne({ _id: claimed._id });
+
+    expect(stored?.sendingSince).toBeNull();
+    await expect(tickets.claimUnsentTickets(eventId, 1)).resolves.toHaveLength(0);
+  });
+
+  it("resend clears a lease, so a stranded ticket is sendable at once", async () => {
+    const eventId = await makeEvent();
+    await bulkRoster(eventId, ["Stuck"]);
+
+    const [claimed] = await tickets.claimUnsentTickets(eventId, 1);
+    await tickets.requeueTicketEmail(claimed._id);
+
+    await expect(tickets.claimUnsentTickets(eventId, 1)).resolves.toHaveLength(1);
+  });
+});
+
+/**
+ * A ticket that burns every attempt disappears from the queue depth, so these
+ * counts are the only thing standing between a mistyped address and someone
+ * being turned away at the gate.
+ */
+describe("delivery visibility", () => {
+  async function exhaust(ticketId: Parameters<TicketsModule["markEmailFailed"]>[0]) {
+    for (let attempt = 0; attempt < tickets.MAX_EMAIL_ATTEMPTS; attempt++) {
+      await tickets.markEmailFailed(ticketId, "550 no such mailbox");
+    }
+  }
+
+  it("counts the tickets the drain has given up on", async () => {
+    const eventId = await makeEvent();
+    const { ticket: doomed } = await issue({
+      eventId,
+      holderName: "Typo",
+      email: "typo@nust.edu.pk",
+    });
+    await issue({
+      eventId,
+      holderName: "Fine",
+      email: "fine@nust.edu.pk",
+    });
+
+    await exhaust(events.toObjectId(doomed.id)!);
+
+    const stats = await tickets.getTicketStats(eventId);
+
+    expect(stats.undeliverable).toBe(1);
+    // The trap this exists to catch: nothing is waiting, yet someone is missing.
+    expect(stats.unsent).toBe(1);
+  });
+
+  it("reports a delivery state the browser can render without the retry cap", async () => {
+    const eventId = await makeEvent();
+    const { ticket } = await issue({
+      eventId,
+      holderName: "States",
+      email: "states@nust.edu.pk",
+    });
+
+    const ticketId = events.toObjectId(ticket.id)!;
+    const read = async () =>
+      (await tickets.listTickets({ eventId })).tickets[0].delivery;
+
+    await expect(read()).resolves.toBe("queued");
+
+    await tickets.markEmailFailed(ticketId, "temporary failure");
+    await expect(read()).resolves.toBe("retrying");
+
+    await exhaust(ticketId);
+    await expect(read()).resolves.toBe("undeliverable");
+
+    await tickets.requeueTicketEmail(ticketId);
+    await tickets.markEmailSent(ticketId);
+    await expect(read()).resolves.toBe("sent");
+  });
+
+  it("filters down to the people who never got an email", async () => {
+    const eventId = await makeEvent();
+
+    const { ticket: failed } = await issue({
+      eventId,
+      holderName: "Failed",
+      email: "failed@nust.edu.pk",
+    });
+    const { ticket: sent } = await issue({
+      eventId,
+      holderName: "Sent",
+      email: "sent@nust.edu.pk",
+    });
+    await issue({
+      eventId,
+      holderName: "Waiting",
+      email: "waiting@nust.edu.pk",
+    });
+
+    await tickets.markEmailFailed(events.toObjectId(failed.id)!, "bounced");
+    await tickets.markEmailSent(events.toObjectId(sent.id)!);
+
+    // Not "Waiting": a ticket nobody has tried to send yet is not a problem.
+    const undelivered = await tickets.listTickets({
+      eventId,
+      delivery: "undelivered",
+    });
+
+    expect(undelivered.tickets.map((row) => row.holderName)).toEqual(["Failed"]);
+
+    const givenUp = await tickets.listTickets({
+      eventId,
+      delivery: "undeliverable",
+    });
+
+    expect(givenUp.tickets).toHaveLength(0);
+
+    await exhaust(events.toObjectId(failed.id)!);
+
+    await expect(
+      tickets
+        .listTickets({ eventId, delivery: "undeliverable" })
+        .then((result) => result.tickets.map((row) => row.holderName))
+    ).resolves.toEqual(["Failed"]);
+  });
+
+  it("does not chase an email for a revoked ticket", async () => {
+    const eventId = await makeEvent();
+    const { ticket } = await issue({
+      eventId,
+      holderName: "Cancelled",
+      email: "cancelled@nust.edu.pk",
+    });
+
+    const ticketId = events.toObjectId(ticket.id)!;
+
+    await tickets.markEmailFailed(ticketId, "bounced");
+    await tickets.revokeTicket(ticketId);
+
+    const undelivered = await tickets.listTickets({
+      eventId,
+      delivery: "undelivered",
+    });
+
+    expect(undelivered.tickets).toHaveLength(0);
   });
 });
 
@@ -548,6 +804,9 @@ describe("stats", () => {
       issued: 1,
       used: 1,
       revoked: 1,
+      // issueTicket does not send — only the live, un-emailed one is owed a mail.
+      unsent: 1,
+      undeliverable: 0,
     });
   });
 });

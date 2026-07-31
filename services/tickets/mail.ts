@@ -12,10 +12,11 @@ import { getEvent } from "./events";
 import { toQrPayload } from "./qr";
 import { formatPakistanDateTime } from "./time";
 import {
-  listUnsentTickets,
+  claimUnsentTickets,
   markEmailFailed,
   markEmailSent,
   mintTicketToken,
+  releaseTicketClaims,
 } from "./tickets";
 import type { EventDoc, TicketDoc } from "./types";
 
@@ -143,6 +144,9 @@ export interface DrainResult {
  * sleep between sends: pacing against Graph's ~30/min throttle belongs to the
  * caller, which can wait between drain calls without holding a request open
  * for the hour that 2000 emails would take.
+ *
+ * Rows are leased before sending, so two drains running at once (two open tabs,
+ * or a tab racing a scheduled job) cannot both email the same person.
  */
 export async function drainOutbox(
   eventId: ObjectId,
@@ -154,10 +158,11 @@ export async function drainOutbox(
     throw new Error("No such event");
   }
 
-  const pending = await listUnsentTickets(eventId, limit);
+  const pending = await claimUnsentTickets(eventId, limit);
   const outcomes: DrainOutcome[] = [];
+  let stoppedAt = pending.length;
 
-  for (const ticket of pending) {
+  for (const [index, ticket] of pending.entries()) {
     const ticketId = ticket._id.toHexString();
 
     try {
@@ -181,6 +186,7 @@ export async function drainOutbox(
           status: "failed",
           error: "Throttled by the mail provider — will retry",
         });
+        stoppedAt = index;
         break;
       }
 
@@ -193,6 +199,13 @@ export async function drainOutbox(
       });
     }
   }
+
+  // Everything from the throttled ticket onward was claimed but never
+  // attempted. Handing the leases back now means the next batch retries
+  // immediately instead of waiting out SEND_LEASE_MS.
+  await releaseTicketClaims(
+    pending.slice(stoppedAt).map((ticket) => ticket._id)
+  );
 
   return {
     attempted: outcomes.length,

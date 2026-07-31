@@ -19,6 +19,12 @@ const GUARDED: { prefix: string; roles: StaffRole[] }[] = [
   { prefix: "/hr", roles: ["admin"] },
 ];
 
+/** Where each role belongs when the page they asked for is not theirs. */
+const LANDING: Record<StaffRole, string> = {
+  admin: "/event-tickets",
+  scanner: "/scan",
+};
+
 /**
  * Redirects only — never the security boundary. Every route handler re-checks
  * the session itself, so a gap here cannot expose a page's data.
@@ -39,8 +45,21 @@ export default function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (hasRole(getRequestSession(request), ...guard.roles)) {
+  const session = getRequestSession(request);
+
+  if (hasRole(session, ...guard.roles)) {
     return NextResponse.next();
+  }
+
+  // Signed in, wrong role. Sending them to /login would ask for credentials
+  // they already have and then land them here anyway, so go straight to their
+  // own page and carry the reason. The inequality is a loop guard: a role whose
+  // landing page it cannot itself open would otherwise redirect forever.
+  if (session && LANDING[session.role] !== pathname) {
+    const url = new URL(LANDING[session.role], request.url);
+    url.searchParams.set("denied", pathname);
+
+    return NextResponse.redirect(url);
   }
 
   const url = new URL("/login", request.url);

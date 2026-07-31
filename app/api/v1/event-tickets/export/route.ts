@@ -54,6 +54,10 @@ export async function GET(request: NextRequest) {
         ticket.status,
         formatPakistanDateTime(ticket.issuedAt),
         formatPakistanDateTime(ticket.emailSentAt),
+        ticket.delivery,
+        // Only useful when delivery says something went wrong, and this is the
+        // one place the provider's own wording survives for us to read later.
+        ticket.emailError ?? "",
         formatPakistanDateTime(ticket.usedAt),
         ticket.usedGate ?? "",
         ticket.usedVia ?? "",
@@ -72,6 +76,8 @@ export async function GET(request: NextRequest) {
       "Status",
       "Issued (PKT)",
       "Emailed (PKT)",
+      "Delivery",
+      "Delivery error",
       "Checked in (PKT)",
       "Gate",
       "Via",

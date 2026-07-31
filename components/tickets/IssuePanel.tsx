@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 import EventPicker from "./EventPicker";
 import { useEvents } from "./useEvents";
@@ -44,6 +45,7 @@ export default function IssuePanel() {
   const [bulkOutcomes, setBulkOutcomes] = useState<BulkOutcome[] | null>(null);
 
   const [remaining, setRemaining] = useState(0);
+  const [undeliverable, setUndeliverable] = useState(0);
   const [draining, setDraining] = useState(false);
   const [drainLog, setDrainLog] = useState<DrainOutcome[]>([]);
   const drainingRef = useRef(false);
@@ -58,6 +60,7 @@ export default function IssuePanel() {
     if (response.ok) {
       const data = await response.json();
       setRemaining(data.remaining ?? 0);
+      setUndeliverable(data.undeliverable ?? 0);
     }
   }, [eventId]);
 
@@ -185,6 +188,7 @@ export default function IssuePanel() {
 
         setDrainLog((previous) => [...(data.outcomes ?? []), ...previous].slice(0, 50));
         setRemaining(data.remaining ?? 0);
+        setUndeliverable(data.undeliverable ?? 0);
 
         if (!data.remaining || data.attempted === 0) {
           break;
@@ -357,6 +361,28 @@ export default function IssuePanel() {
             </button>
           )}
         </div>
+
+        {/*
+          `remaining` drops these, so "0 waiting" on its own reads as success
+          even when the drain quietly gave up on people.
+        */}
+        {undeliverable > 0 && (
+          <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+            <strong className="font-semibold">
+              {undeliverable} could not be emailed
+            </strong>{" "}
+            after repeated tries, so sending has stopped attempting{" "}
+            {undeliverable === 1 ? "it" : "them"}.{" "}
+            <Link
+              href="/event-tickets/list?filter=undelivered"
+              className="font-medium underline"
+            >
+              Check the addresses
+            </Link>{" "}
+            — fix any typo by issuing a fresh ticket, or use Resend to try the
+            same address again.
+          </div>
+        )}
 
         {drainLog.length > 0 && (
           <ul className="mt-4 space-y-1 text-sm">
