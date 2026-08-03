@@ -20,6 +20,7 @@ const PORT = Number(process.env.E2E_PORT ?? 3131);
 const BASE = `http://127.0.0.1:${PORT}`;
 const CREDENTIALS = {
   admin: { username: "e2e-admin", password: "e2e-admin-pass" },
+  ticketing: { username: "e2e-ticketing", password: "e2e-ticketing-pass" },
   scanner: { username: "e2e-gate", password: "e2e-gate-pass" },
 };
 
@@ -105,10 +106,16 @@ async function attachToken(tickets, ticketId) {
 
 async function run(tickets) {
   const admin = await login(CREDENTIALS.admin);
+  const ticketing = await login(CREDENTIALS.ticketing);
   const scanner = await login(CREDENTIALS.scanner);
 
   // --- auth and roles --------------------------------------------------
   check("admin login yields the admin role", admin.role === "admin", admin.role);
+  check(
+    "ticketing login yields the ticketing role",
+    ticketing.role === "ticketing",
+    ticketing.role
+  );
   check("scanner login yields the scanner role", scanner.role === "scanner");
   check(
     "a wrong password is rejected",
@@ -127,6 +134,18 @@ async function run(tickets) {
   check(
     "a scanner cannot read the ticket list",
     (await api("/api/v1/event-tickets?eventId=x", { cookie: scanner.cookie })).status === 401
+  );
+  check(
+    "a ticketing admin cannot read the HR invite links",
+    (await api("/api/v1/hr/links", { cookie: ticketing.cookie })).status === 401
+  );
+
+  const bounced = await api("/hr", { cookie: ticketing.cookie });
+  check(
+    "a ticketing admin asking for /hr is bounced to its own page",
+    bounced.status === 307 &&
+      (bounced.headers.get("location") ?? "").includes("/event-tickets?denied=%2Fhr"),
+    bounced.headers.get("location") ?? ""
   );
   check(
     "a role rewritten in the cookie is rejected",
@@ -376,11 +395,65 @@ async function run(tickets) {
     ).status === 401
   );
 
+  // --- the ticketing admin does the whole job ------------------------------
+  // The event head runs the gate, so every step they need is asserted end to
+  // end rather than trusting the role list in the route handlers.
+  check(
+    "a ticketing admin can read the ticket list",
+    (await api(`/api/v1/event-tickets?eventId=${eventId}`, { cookie: ticketing.cookie }))
+      .status === 200
+  );
+  check(
+    "a ticketing admin can export the attendee list",
+    (
+      await api(`/api/v1/event-tickets/export?eventId=${eventId}`, {
+        cookie: ticketing.cookie,
+      })
+    ).status === 200
+  );
+
+  const ticketingEvent = await api("/api/v1/events", {
+    cookie: ticketing.cookie,
+    method: "POST",
+    body: { name: "E2E Ticketing Admin", venue: "Gate 2" },
+  });
+  check("a ticketing admin can create an event", ticketingEvent.status === 201);
+
+  const ticketingIssued = await api("/api/v1/event-tickets", {
+    cookie: ticketing.cookie,
+    method: "POST",
+    body: {
+      eventId,
+      holderName: "Head Test",
+      email: "head@nust.edu.pk",
+      sendEmail: false,
+    },
+  });
+  check(
+    "a ticketing admin can issue a ticket",
+    ticketingIssued.status === 201,
+    ticketingIssued.text.slice(0, 120)
+  );
+
+  const ticketingToken = await attachToken(tickets, ticketingIssued.json.ticket.id);
+  check(
+    "a ticketing admin can scan a ticket in",
+    (
+      await api("/api/v1/checkin", {
+        cookie: ticketing.cookie,
+        method: "POST",
+        body: { token: `OW1:${ticketingToken}`, eventId, gate: "main-gate" },
+      })
+    ).json?.result === "valid"
+  );
+
   // --- secrecy -------------------------------------------------------------
   const stored = JSON.stringify(await tickets.find({}).toArray());
   check(
     "no raw token is stored anywhere",
-    !stored.includes(token) && !stored.includes(raceToken)
+    !stored.includes(token) &&
+      !stored.includes(raceToken) &&
+      !stored.includes(ticketingToken)
   );
 }
 
@@ -401,6 +474,8 @@ try {
       HR_SESSION_SECRET: "e2e-session-secret",
       HR_USERNAME: CREDENTIALS.admin.username,
       HR_PASSWORD: CREDENTIALS.admin.password,
+      TICKETING_ADMIN_USERNAME: CREDENTIALS.ticketing.username,
+      TICKETING_ADMIN_PASSWORD: CREDENTIALS.ticketing.password,
       SCANNER_USERNAME: CREDENTIALS.scanner.username,
       SCANNER_PASSWORD: CREDENTIALS.scanner.password,
     },

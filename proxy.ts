@@ -16,7 +16,7 @@ import {
 // /socials self-gates (renders its own login), and /scan just redirects to it,
 // so neither is listed here — proxy only guards the pages that bounce to /login.
 const GUARDED: { prefix: string; roles: StaffRole[] }[] = [
-  { prefix: "/event-tickets", roles: ["admin"] },
+  { prefix: "/event-tickets", roles: ["admin", "ticketing"] },
   { prefix: "/hr", roles: ["admin"] },
   { prefix: "/hunt", roles: ["admin", "hunt"] },
 ];
@@ -28,7 +28,8 @@ const PUBLIC_EXCEPTIONS = ["/hr/login", "/hunt/c"];
 /** Where each role belongs when the page they asked for is not theirs. */
 const LANDING: Record<StaffRole, string> = {
   admin: "/event-tickets",
-  scanner: "/scan",
+  ticketing: "/event-tickets",
+  scanner: "/socials",
   hunt: "/hunt",
 };
 

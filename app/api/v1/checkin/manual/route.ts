@@ -16,7 +16,7 @@ import { checkInById } from "@/services/tickets/tickets";
  * update as a scan, so it cannot double-admit either.
  */
 export async function POST(request: NextRequest) {
-  const denied = requireRole(request, "scanner", "admin");
+  const denied = requireRole(request, "scanner", "admin", "ticketing");
 
   if (denied) {
     return denied;

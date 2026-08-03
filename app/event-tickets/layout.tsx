@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import AccessNotice from "@/components/tickets/AccessNotice";
+
 const tabs = [
   { href: "/event-tickets", label: "Overview" },
   { href: "/event-tickets/issue", label: "Issue" },
@@ -17,6 +19,9 @@ export default function EventTicketsLayout({
 
   return (
     <div className="min-h-screen bg-surface text-fg">
+      {/* A ticketing admin bounced off /hr (or any page not theirs) lands here;
+          without this the page they asked for just silently vanishes. */}
+      <AccessNotice inline />
       <header className="sticky top-0 z-30 border-b border-fg/10 bg-surface/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex items-baseline gap-3">

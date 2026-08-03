@@ -78,6 +78,8 @@ Backend features need these (set via the pipeline or a local `.env`):
 | `MONGO_DB_URI` | database (tickets, newsletter) |
 | `TENANT_ID`, `CLIENT_ID`, `CLIENT_SECRET`, `MS_GRAPH_SENDER` | ticket emails (MS Graph) |
 | `HR_USERNAME`, `HR_PASSWORD`, `HR_SESSION_SECRET` | admin auth |
+| `TICKETING_ADMIN_USERNAME`, `TICKETING_ADMIN_PASSWORD` | ticketing admin auth (event head) |
+| `SCANNER_USERNAME`, `SCANNER_PASSWORD` | gate scanner auth |
 | `SECRETS_KEY` | `esecrets` pipeline |
 
 ### Common scripts

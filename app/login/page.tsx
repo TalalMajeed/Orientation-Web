@@ -5,8 +5,21 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 const DEFAULT_LANDING: Record<string, string> = {
   admin: "/event-tickets",
+  ticketing: "/event-tickets",
   scanner: "/socials",
   hunt: "/hunt",
+};
+
+/**
+ * Prefixes each role cannot open — the mirror of proxy.ts's GUARDED table.
+ * Duplicated because this is a client component and the session module is
+ * server-only; proxy.ts is still the one that enforces it.
+ */
+const BLOCKED: Record<string, string[]> = {
+  admin: [],
+  ticketing: ["/hr", "/hunt"],
+  scanner: ["/event-tickets", "/hr", "/hunt"],
+  hunt: ["/event-tickets", "/hr"],
 };
 
 /** Only same-origin relative paths, so ?next= cannot bounce staff off-site. */
@@ -16,6 +29,12 @@ function safeNext(candidate: string | null): string | null {
   }
 
   return candidate;
+}
+
+function canOpen(role: string, path: string): boolean {
+  return !(BLOCKED[role] ?? []).some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`)
+  );
 }
 
 function LoginForm() {
@@ -49,27 +68,18 @@ function LoginForm() {
 
       const role = typeof data.role === "string" ? data.role : "admin";
       const next = safeNext(searchParams.get("next"));
-
-      // A scanner or hunt-only login sent to an admin page would only bounce
-      // back here, so each scoped role always lands on its own page — but
-      // carries the reason, or the page they asked for silently vanishes and
-      // the link looks broken.
+      const landing = DEFAULT_LANDING[role] ?? DEFAULT_LANDING.admin;
       let destination: string;
 
-      if (role === "admin") {
-        destination = next ?? DEFAULT_LANDING.admin;
+      // Sending someone to a page their role cannot open would only bounce them
+      // back here, so they land on their own page — but carry the reason, or the
+      // page they asked for silently vanishes and the link looks broken.
+      if (next && canOpen(role, next)) {
+        destination = next;
+      } else if (next) {
+        destination = `${landing}?denied=${encodeURIComponent(next)}`;
       } else {
-        const ownLanding = DEFAULT_LANDING[role] ?? DEFAULT_LANDING.admin;
-        const canOpenNext =
-          next !== null &&
-          (next === ownLanding ||
-            next.startsWith(`${ownLanding}/`) ||
-            (role === "scanner" && (next === "/scan" || next.startsWith("/scan/"))));
-
-        destination =
-          next && !canOpenNext
-            ? `${ownLanding}?denied=${encodeURIComponent(next)}`
-            : ownLanding;
+        destination = landing;
       }
 
       router.push(destination);
