@@ -12,6 +12,7 @@ import type {
   CheckInResponse,
   CheckInResult,
   CheckInVia,
+  DeliveryState,
   TicketDoc,
   TicketDto,
   TicketStatus,
@@ -45,6 +46,18 @@ function isDuplicateKeyError(error: unknown): error is {
   );
 }
 
+export function deliveryStateOf(doc: TicketDoc): DeliveryState {
+  if (doc.emailSentAt) {
+    return "sent";
+  }
+
+  if ((doc.emailAttempts ?? 0) >= MAX_EMAIL_ATTEMPTS) {
+    return "undeliverable";
+  }
+
+  return doc.emailError ? "retrying" : "queued";
+}
+
 export function toTicketDto(doc: TicketDoc): TicketDto {
   return {
     id: doc._id.toHexString(),
@@ -56,6 +69,7 @@ export function toTicketDto(doc: TicketDoc): TicketDto {
     emailSentAt: doc.emailSentAt ? doc.emailSentAt.toISOString() : null,
     emailError: doc.emailError,
     emailAttempts: doc.emailAttempts ?? 0,
+    delivery: deliveryStateOf(doc),
     usedAt: doc.usedAt ? doc.usedAt.toISOString() : null,
     usedGate: doc.usedGate,
     usedVia: doc.usedVia,
@@ -111,6 +125,7 @@ export async function issueTicket({
       emailSentAt: null,
       emailError: null,
       emailAttempts: 0,
+      sendingSince: null,
       usedAt: null,
       usedGate: null,
       usedVia: null,
@@ -373,8 +388,18 @@ export async function mintTicketToken(ticketId: ObjectId): Promise<{
 export const MAX_EMAIL_ATTEMPTS = 5;
 
 /**
+ * How long a drain may hold a claimed row before another drain may take it.
+ * Generous on purpose: the only cost of a long lease is that a genuinely
+ * crashed batch waits this long before being retried, and the whole run is an
+ * hour. Too short is the dangerous direction — it re-creates the duplicate send
+ * the lease exists to prevent, for a batch that is merely slow.
+ */
+export const SEND_LEASE_MS = 5 * 60_000;
+
+/**
  * The resend button. Clears the cursor so the drain picks this ticket up and
- * mints it a new token; the old QR keeps working either way.
+ * mints it a new token; the old QR keeps working either way. Drops any lease
+ * too, so a row stranded by a crashed drain is immediately sendable again.
  */
 export async function requeueTicketEmail(ticketId: ObjectId): Promise<TicketDto> {
   await ensureIndexes();
@@ -383,7 +408,14 @@ export async function requeueTicketEmail(ticketId: ObjectId): Promise<TicketDto>
 
   const updated = await tickets.findOneAndUpdate(
     { _id: ticketId, status: "issued" },
-    { $set: { emailSentAt: null, emailError: null, emailAttempts: 0 } },
+    {
+      $set: {
+        emailSentAt: null,
+        emailError: null,
+        emailAttempts: 0,
+        sendingSince: null,
+      },
+    },
     { returnDocument: "after" }
   );
 
@@ -400,35 +432,102 @@ export async function requeueTicketEmail(ticketId: ObjectId): Promise<TicketDto>
   return toTicketDto(updated);
 }
 
-/** emailSentAt IS the cursor, so a crashed or timed-out drain resumes here. */
-export async function listUnsentTickets(
+/** Everything still owed an email: unsent, still live, not yet given up on. */
+function pendingFilter(eventId: ObjectId): Record<string, unknown> {
+  return {
+    eventId,
+    status: "issued",
+    emailSentAt: null,
+    emailAttempts: { $lt: MAX_EMAIL_ATTEMPTS },
+  };
+}
+
+/**
+ * Claims the next batch for sending and returns only the rows this caller now
+ * owns. `emailSentAt` is still the resume cursor — the lease only decides who
+ * is allowed to work a row right now.
+ *
+ * One findOneAndUpdate per row rather than a find-then-update: Mongo is atomic
+ * per document, so a conditional claim is the only way two concurrent drains
+ * cannot both take the same ticket. At a batch size of 25 the extra round trips
+ * are irrelevant next to the mail send each one is about to do.
+ */
+export async function claimUnsentTickets(
   eventId: ObjectId,
   limit: number
 ): Promise<TicketDoc[]> {
   await ensureIndexes();
 
   const tickets = await ticketsCollection();
+  const now = new Date();
+  const staleBefore = new Date(now.getTime() - SEND_LEASE_MS);
+  const claimed: TicketDoc[] = [];
 
-  return tickets
-    .find({
-      eventId,
-      status: "issued",
-      emailSentAt: null,
-      emailAttempts: { $lt: MAX_EMAIL_ATTEMPTS },
-    })
-    .sort({ issuedAt: 1 })
-    .limit(limit)
-    .toArray();
+  for (let taken = 0; taken < limit; taken++) {
+    const doc = await tickets.findOneAndUpdate(
+      {
+        ...pendingFilter(eventId),
+        // Free, or held by a drain that has since died.
+        $or: [
+          { sendingSince: null },
+          { sendingSince: { $lt: staleBefore } },
+        ],
+      },
+      { $set: { sendingSince: now } },
+      { sort: { issuedAt: 1 }, returnDocument: "after" }
+    );
+
+    if (!doc) {
+      break;
+    }
+
+    claimed.push(doc);
+  }
+
+  return claimed;
 }
 
+/**
+ * Hands a claimed row back unsent and unpenalised. Used when a batch stops
+ * early — throttling is not the ticket's fault, and the rows behind it must not
+ * sit out the whole lease window for it.
+ */
+export async function releaseTicketClaims(ticketIds: ObjectId[]): Promise<void> {
+  if (ticketIds.length === 0) {
+    return;
+  }
+
+  const tickets = await ticketsCollection();
+
+  await tickets.updateMany(
+    { _id: { $in: ticketIds } },
+    { $set: { sendingSince: null } }
+  );
+}
+
+/** Counts what is still owed an email, in flight or not. */
 export async function countUnsentTickets(eventId: ObjectId): Promise<number> {
+  const tickets = await ticketsCollection();
+
+  return tickets.countDocuments(pendingFilter(eventId));
+}
+
+/**
+ * Tickets the drain has given up on: every attempt spent, never delivered.
+ * These stop appearing in the queue depth, so without a count of their own they
+ * are invisible — the queue reads "0 waiting" and the holder finds out at the
+ * gate.
+ */
+export async function countUndeliverableTickets(
+  eventId: ObjectId
+): Promise<number> {
   const tickets = await ticketsCollection();
 
   return tickets.countDocuments({
     eventId,
     status: "issued",
     emailSentAt: null,
-    emailAttempts: { $lt: MAX_EMAIL_ATTEMPTS },
+    emailAttempts: { $gte: MAX_EMAIL_ATTEMPTS },
   });
 }
 
@@ -438,7 +537,7 @@ export async function markEmailSent(ticketId: ObjectId): Promise<void> {
   await tickets.updateOne(
     { _id: ticketId },
     {
-      $set: { emailSentAt: new Date(), emailError: null },
+      $set: { emailSentAt: new Date(), emailError: null, sendingSince: null },
       $inc: { emailAttempts: 1 },
     }
   );
@@ -450,9 +549,14 @@ export async function markEmailFailed(
 ): Promise<void> {
   const tickets = await ticketsCollection();
 
+  // Releases the lease as well: the retry is allowed on the next batch rather
+  // than after the lease expires.
   await tickets.updateOne(
     { _id: ticketId },
-    { $set: { emailError: message.slice(0, 500) }, $inc: { emailAttempts: 1 } }
+    {
+      $set: { emailError: message.slice(0, 500), sendingSince: null },
+      $inc: { emailAttempts: 1 },
+    }
   );
 }
 
@@ -466,10 +570,18 @@ export async function findTicketById(
 
 // ---------------------------------------------------------------- reading
 
+/**
+ * "undelivered" is deliberately coarser than DeliveryState: from HR's side
+ * "who did not get their email" is one question, and splitting it into retrying
+ * versus given-up would just make them click twice.
+ */
+export type DeliveryFilter = "undelivered" | "undeliverable";
+
 export interface ListTicketsInput {
   eventId: ObjectId;
   search?: string;
   status?: TicketStatus;
+  delivery?: DeliveryFilter;
   page?: number;
   pageSize?: number;
 }
@@ -489,6 +601,7 @@ export async function listTickets({
   eventId,
   search,
   status,
+  delivery,
   page = 1,
   pageSize = 50,
 }: ListTicketsInput): Promise<ListTicketsResult> {
@@ -499,6 +612,18 @@ export async function listTickets({
 
   if (status) {
     filter.status = status;
+  }
+
+  if (delivery) {
+    // Revoked rows are excluded on purpose: nobody needs to chase an email for
+    // a ticket that has been cancelled.
+    filter.status = status ?? "issued";
+    filter.emailSentAt = null;
+
+    filter.emailAttempts =
+      delivery === "undeliverable"
+        ? { $gte: MAX_EMAIL_ATTEMPTS }
+        : { $gt: 0 };
   }
 
   const trimmedSearch = search?.trim();
@@ -534,20 +659,36 @@ export interface TicketStats {
   issued: number;
   used: number;
   revoked: number;
+  /** Still owed an email. Shrinks to 0 as the queue drains. */
+  unsent: number;
+  /** Out of attempts, never delivered. Only a human clears this one. */
+  undeliverable: number;
 }
 
 export async function getTicketStats(eventId: ObjectId): Promise<TicketStats> {
   await ensureIndexes();
 
   const tickets = await ticketsCollection();
-  const rows = await tickets
-    .aggregate<{ _id: TicketStatus; count: number }>([
-      { $match: { eventId } },
-      { $group: { _id: "$status", count: { $sum: 1 } } },
-    ])
-    .toArray();
 
-  const stats: TicketStats = { total: 0, issued: 0, used: 0, revoked: 0 };
+  const [rows, unsent, undeliverable] = await Promise.all([
+    tickets
+      .aggregate<{ _id: TicketStatus; count: number }>([
+        { $match: { eventId } },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ])
+      .toArray(),
+    countUnsentTickets(eventId),
+    countUndeliverableTickets(eventId),
+  ]);
+
+  const stats: TicketStats = {
+    total: 0,
+    issued: 0,
+    used: 0,
+    revoked: 0,
+    unsent,
+    undeliverable,
+  };
 
   for (const row of rows) {
     stats[row._id] = row.count;

@@ -51,9 +51,26 @@ function LoginForm() {
       const next = safeNext(searchParams.get("next"));
 
       // A scanner or hunt-only login sent to an admin page would only bounce
-      // back here, so each scoped role gets its own default landing.
-      const destination =
-        role === "scanner" || role === "hunt" ? DEFAULT_LANDING[role] : (next ?? DEFAULT_LANDING.admin);
+      // back here, so each scoped role always lands on its own page — but
+      // carries the reason, or the page they asked for silently vanishes and
+      // the link looks broken.
+      let destination: string;
+
+      if (role === "admin") {
+        destination = next ?? DEFAULT_LANDING.admin;
+      } else {
+        const ownLanding = DEFAULT_LANDING[role] ?? DEFAULT_LANDING.admin;
+        const canOpenNext =
+          next !== null &&
+          (next === ownLanding ||
+            next.startsWith(`${ownLanding}/`) ||
+            (role === "scanner" && (next === "/scan" || next.startsWith("/scan/"))));
+
+        destination =
+          next && !canOpenNext
+            ? `${ownLanding}?denied=${encodeURIComponent(next)}`
+            : ownLanding;
+      }
 
       router.push(destination);
       router.refresh();

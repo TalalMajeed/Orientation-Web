@@ -5,6 +5,7 @@ import {
   hasRole,
   verifySessionToken,
 } from "@/services/auth/session";
+import AccessNotice from "@/components/tickets/AccessNotice";
 import Scanner from "@/components/tickets/Scanner";
 import SocialsLogin from "@/components/socials/SocialsLogin";
 
@@ -16,7 +17,12 @@ export default async function SocialsPage() {
   const session = verifySessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
 
   if (hasRole(session, "scanner", "admin")) {
-    return <Scanner />;
+    return (
+      <>
+        <AccessNotice />
+        <Scanner />
+      </>
+    );
   }
 
   return <SocialsLogin />;

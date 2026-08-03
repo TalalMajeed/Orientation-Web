@@ -7,11 +7,15 @@ import { useEvents } from "./useEvents";
 import { formatPakistanDateTime } from "@/services/tickets/time";
 import type { TicketDto, TicketStatus } from "@/services/tickets/types";
 
-const FILTERS: { label: string; value: TicketStatus | "all" }[] = [
+/** "No email" is a delivery filter, not a status — the API takes it separately. */
+type Filter = TicketStatus | "all" | "undelivered";
+
+const FILTERS: { label: string; value: Filter }[] = [
   { label: "All", value: "all" },
   { label: "Issued", value: "issued" },
   { label: "Used", value: "used" },
   { label: "Revoked", value: "revoked" },
+  { label: "No email", value: "undelivered" },
 ];
 
 const STATUS_STYLES: Record<TicketStatus, string> = {
@@ -20,13 +24,47 @@ const STATUS_STYLES: Record<TicketStatus, string> = {
   revoked: "border border-ember/40 bg-ember/10 text-ember",
 };
 
-export default function TicketList() {
+/**
+ * The old cell said "Failed (3)" for both a ticket the drain will pick up again
+ * and one it has abandoned. Those need different reactions from HR, so they get
+ * different words. The provider's message stays in the tooltip — it is for us,
+ * not for them.
+ */
+function DeliveryCell({ ticket }: { ticket: TicketDto }) {
+  if (ticket.delivery === "sent") {
+    return <>{formatPakistanDateTime(ticket.emailSentAt)}</>;
+  }
+
+  if (ticket.delivery === "undeliverable") {
+    return (
+      <span className="text-ember" title={ticket.emailError ?? undefined}>
+        Never arrived
+      </span>
+    );
+  }
+
+  if (ticket.delivery === "retrying") {
+    return (
+      <span className="text-sky" title={ticket.emailError ?? undefined}>
+        Retrying
+      </span>
+    );
+  }
+
+  return <span className="text-fg/40">Waiting to send</span>;
+}
+
+export default function TicketList({
+  initialFilter = "all",
+}: {
+  initialFilter?: Filter;
+}) {
   const { events, eventId, selectEvent } = useEvents();
   const [tickets, setTickets] = useState<TicketDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
-  const [status, setStatus] = useState<TicketStatus | "all">("all");
+  const [filter, setFilter] = useState<Filter>(initialFilter);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,8 +80,10 @@ export default function TicketList() {
 
     const params = new URLSearchParams({ eventId, page: String(page) });
 
-    if (status !== "all") {
-      params.set("status", status);
+    if (filter === "undelivered") {
+      params.set("delivery", "undelivered");
+    } else if (filter !== "all") {
+      params.set("status", filter);
     }
 
     if (query) {
@@ -60,7 +100,7 @@ export default function TicketList() {
     }
 
     setLoading(false);
-  }, [eventId, page, query, status]);
+  }, [eventId, page, query, filter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- results follow the filters
@@ -153,17 +193,17 @@ export default function TicketList() {
         </form>
 
         <div className="flex flex-wrap gap-2">
-          {FILTERS.map((filter) => (
+          {FILTERS.map((option) => (
             <button
-              key={filter.value}
+              key={option.value}
               type="button"
               onClick={() => {
                 setPage(1);
-                setStatus(filter.value);
+                setFilter(option.value);
               }}
-              className={`${pill} ${status === filter.value ? pillOn : pillOff}`}
+              className={`${pill} ${filter === option.value ? pillOn : pillOff}`}
             >
-              {filter.label}
+              {option.label}
             </button>
           ))}
         </div>
@@ -215,13 +255,7 @@ export default function TicketList() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-fg/60">
-                  {ticket.emailError ? (
-                    <span className="text-ember" title={ticket.emailError}>
-                      Failed ({ticket.emailAttempts})
-                    </span>
-                  ) : (
-                    formatPakistanDateTime(ticket.emailSentAt)
-                  )}
+                  <DeliveryCell ticket={ticket} />
                 </td>
                 <td className="px-4 py-3 text-fg/60">
                   {formatPakistanDateTime(ticket.usedAt)}

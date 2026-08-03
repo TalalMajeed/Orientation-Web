@@ -170,21 +170,6 @@ body {
   100% { transform: translate(0, 0); }
 }
 
-/* Lenis smooth scroll */
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
-
 /* Restyle Leaflet's default zoom control to match the dotted/rounded system
    instead of its plain white squares. */
 .leaflet-control-zoom {

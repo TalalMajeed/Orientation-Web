@@ -12,6 +12,8 @@ interface Stats {
   issued: number;
   used: number;
   revoked: number;
+  unsent: number;
+  undeliverable: number;
 }
 
 export default function Overview() {
@@ -147,6 +149,27 @@ export default function Overview() {
             className="uppercase tracking-[0.1em] text-fg underline decoration-dotted underline-offset-4 hover:text-ember"
           >
             Send them
+          </Link>
+        </div>
+      )}
+
+      {/*
+        The queue depth above excludes these, so without their own warning they
+        are invisible: sending finishes, the counter reads zero, and nobody knows
+        anyone was missed until they turn up at the gate.
+      */}
+      {stats && stats.undeliverable > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-ember/50 bg-ember/[0.06] p-4 font-mono text-[12px] text-fg">
+          <span className="text-ember">
+            {stats.undeliverable} ticket{stats.undeliverable === 1 ? "" : "s"} could
+            not be emailed and sending has stopped trying — usually a mistyped
+            address.
+          </span>
+          <Link
+            href="/event-tickets/list?filter=undelivered"
+            className="uppercase tracking-[0.1em] text-fg underline decoration-dotted underline-offset-4 hover:text-ember"
+          >
+            See who
           </Link>
         </div>
       )}
