@@ -1,3 +1,5 @@
+import ContactForm from "./ContactForm";
+
 const details = [
   { label: "General", value: "info@nustorientation.pk", href: "mailto:info@nustorientation.pk" },
   { label: "Support", value: "support@nustorientation.pk", href: "mailto:support@nustorientation.pk" },
@@ -6,10 +8,10 @@ const details = [
 ];
 
 const socials = [
-  { label: "Instagram", href: "#" },
-  { label: "Facebook", href: "#" },
-  { label: "YouTube", href: "#" },
-  { label: "LinkedIn", href: "#" },
+  { label: "Instagram", href: "https://www.instagram.com/nustgram/" },
+  { label: "Facebook", href: "https://www.facebook.com/nustofficial/" },
+  { label: "YouTube", href: "https://www.youtube.com/channel/UC7LwGPPk9zPYwUbtGKBJy5g" },
+  { label: "LinkedIn", href: "https://pk.linkedin.com/school/nustofficial" },
 ];
 
 export default function ContactBlock() {
@@ -32,6 +34,8 @@ export default function ContactBlock() {
         >
           Email the team →
         </a>
+
+        <ContactForm />
 
         {/* Contact details as plain, separated cards — clearer to scan than a
             bare label/value grid, and each one is its own tap target. */}
@@ -64,6 +68,8 @@ export default function ContactBlock() {
               <a
                 key={s.label}
                 href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="rounded-full border-2 border-dotted border-fg/40 px-5 py-2 font-italic text-sm italic text-fg transition-colors hover:border-transparent hover:bg-fg hover:text-surface"
               >
                 {s.label}

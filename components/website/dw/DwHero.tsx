@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 const navLinks = [
@@ -17,6 +17,7 @@ function heroVideo() {
 export default function DwHero() {
   const [muted, setMuted] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const v = heroVideo();
@@ -27,11 +28,52 @@ export default function DwHero() {
     return () => v.removeEventListener("volumechange", onVol);
   }, []);
 
+  // Fades the video's volume out smoothly as the hero scrolls out of view
+  // (100 -> 90 -> 80 ...) instead of it staying at full volume until it's
+  // suddenly out of frame. Never fades past 50% — it should stay audible,
+  // just quieter, not disappear.
+  const MIN_VOLUME = 0.5;
+
+  useEffect(() => {
+    let raf = 0;
+
+    const update = () => {
+      raf = 0;
+      const section = sectionRef.current;
+      const v = heroVideo();
+      if (!section || !v) return;
+
+      const rect = section.getBoundingClientRect();
+      const scrolledPast = rect.height > 0 ? Math.min(1, Math.max(0, -rect.top / rect.height)) : 0;
+      v.volume = 1 - scrolledPast * (1 - MIN_VOLUME);
+    };
+
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   const toggleMute = () => {
     const v = heroVideo();
+    const section = sectionRef.current;
     if (!v) return;
     v.muted = !v.muted;
-    if (!v.muted) v.play().catch(() => {});
+    if (!v.muted) {
+      if (section) {
+        const rect = section.getBoundingClientRect();
+        const scrolledPast = rect.height > 0 ? Math.min(1, Math.max(0, -rect.top / rect.height)) : 0;
+        v.volume = 1 - scrolledPast * (1 - MIN_VOLUME);
+      }
+      v.play().catch(() => {});
+    }
   };
 
   // A persistent frosted-glass backing keeps these legible over any frame of
@@ -40,7 +82,7 @@ export default function DwHero() {
     "touch-manipulation rounded-full border-2 border-dotted border-cream/70 bg-ink/35 px-4 py-1.5 font-italic italic text-sm text-cream shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-md transition-colors hover:border-transparent hover:bg-cream hover:text-ink active:bg-cream active:text-ink";
 
   return (
-    <section className="h-[100svh] w-full">
+    <section ref={sectionRef} className="h-[100svh] w-full">
       <div className="relative m-1.5 h-[calc(100svh-12px)] overflow-hidden rounded-[30px] bg-ink">
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video

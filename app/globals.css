@@ -30,7 +30,8 @@
   --color-blue: #2a5290;
   --color-blue-light: #3d66a9;
   --color-sky: #9fe4ff;
-  --color-cream: #f4f1ea;
+  /* Matches --color-surface — the old warm cream is retired everywhere. */
+  --color-cream: #f2f7ff;
   /* Accent recolored to lean into the site's own blue family (was magenta,
      orange before that) — drawn straight from --color-blue so the palette
      reads cooler without introducing a new hue. */
@@ -39,16 +40,18 @@
 
 /* Theme-aware semantic tokens (non-inline so they can be overridden per theme) */
 @theme {
-  --color-surface: #f4f1ea;
+  /* Light, near-white blue in place of the old cream/white — used for both
+     the light surface and any "inverse" (light-on-dark) text/background. */
+  --color-surface: #f2f7ff;
   --color-fg: #090c13;
   --color-inverse-surface: #0b0f18;
-  --color-inverse-fg: #f4f1ea;
+  --color-inverse-fg: #f2f7ff;
 }
 
 :root[data-theme="dark"] {
   --color-surface: #0b0f18;
-  --color-fg: #f4f1ea;
-  --color-inverse-surface: #f4f1ea;
+  --color-fg: #f2f7ff;
+  --color-inverse-surface: #f2f7ff;
   --color-inverse-fg: #0b0f18;
 }
 
@@ -180,4 +183,30 @@ html.lenis body {
 }
 .lenis.lenis-stopped {
   overflow: hidden;
+}
+
+/* Restyle Leaflet's default zoom control to match the dotted/rounded system
+   instead of its plain white squares. */
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column;
+  gap: 6px;
+}
+.leaflet-control-zoom a {
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 32px !important;
+  border-radius: 9999px !important;
+  border: 2px dotted color-mix(in srgb, var(--color-fg) 40%, transparent) !important;
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent) !important;
+  color: var(--color-fg) !important;
+  backdrop-filter: blur(4px);
+  font-family: var(--font-mono), monospace;
+}
+.leaflet-control-zoom a:hover {
+  border-color: var(--color-fg) !important;
+  background: var(--color-fg) !important;
+  color: var(--color-surface) !important;
 }

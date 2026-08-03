@@ -39,7 +39,11 @@ components/
   tickets/               # Ticketing/admin UI
 services/                # tickets, auth, email, newsletter, hr
 docs/event-ticketing.md  # Ticketing system design brief
+docs/site-structure.md   # Full page-by-page map: public site + every admin panel
 ```
+
+For a complete route-by-route reference (every page, every admin panel, who
+can log into what), see [`docs/site-structure.md`](docs/site-structure.md).
 
 ---
 

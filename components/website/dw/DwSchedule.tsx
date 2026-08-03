@@ -12,11 +12,11 @@ const days: Day[] = [
     tab: "Day 01",
     date: "September 2026",
     events: [
-      { time: "09:00 – 13:00", title: "Reception at Schools", location: "Respective Schools (NET Hall for SEECS)" },
-      { time: "10:00 – 11:30", title: "Opening & Q/A with Parents", location: "Jinnah Auditorium" },
-      { time: "11:30 – 13:00", title: "Principal S3H Address + Q/A", location: "Jinnah Auditorium" },
-      { time: "14:00 – 16:00", title: "Meet Your OGs", location: "Helipad Ground" },
-      { time: "16:00 – 20:30", title: "Batch Photo", location: "Convocation Ground" },
+      { time: "TBD", title: "Reception at Schools", location: "TBD" },
+      { time: "TBD", title: "Opening & Q/A with Parents", location: "TBD" },
+      { time: "TBD", title: "Principal Address + Q/A", location: "TBD" },
+      { time: "TBD", title: "Meet Your OGs", location: "TBD" },
+      { time: "TBD", title: "Batch Photo", location: "TBD" },
     ],
   },
   {
@@ -24,9 +24,9 @@ const days: Day[] = [
     tab: "Day 02",
     date: "September 2026",
     events: [
-      { time: "09:00 – 13:00", title: "Reception at Schools", location: "Respective Schools" },
-      { time: "14:00 – 17:00", title: "Art-Based OG Activities + Societies", location: "All over NUST / Helipad Ground" },
-      { time: "17:00 – 22:00", title: "ON Fest + Society Stalls", location: "SCME Ground" },
+      { time: "TBD", title: "Reception at Schools", location: "TBD" },
+      { time: "TBD", title: "Art-Based OG Activities + Societies", location: "TBD" },
+      { time: "TBD", title: "ON Fest + Society Stalls", location: "TBD" },
     ],
   },
   {
@@ -34,9 +34,9 @@ const days: Day[] = [
     tab: "Day 03",
     date: "September 2026",
     events: [
-      { time: "09:00 – 13:00", title: "Life at NUST", location: "Jinnah Auditorium", note: "Featuring NUST alumni testimonials" },
-      { time: "14:00 – 17:00", title: "Drama by NDC", location: "Jinnah Auditorium" },
-      { time: "17:00 – 19:00", title: "Closing Ceremony", location: "Jinnah Auditorium" },
+      { time: "TBD", title: "Life at NUST", location: "TBD", note: "Featuring NUST alumni testimonials" },
+      { time: "TBD", title: "Drama by NDC", location: "TBD" },
+      { time: "TBD", title: "Closing Ceremony", location: "TBD" },
     ],
   },
 ];
@@ -56,9 +56,14 @@ export default function DwSchedule() {
       <div className="relative mx-auto max-w-[1600px]">
         <p className="font-italic text-sm italic text-fg/50">— Orientation Week</p>
         <div className="mt-4 flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-end">
-          <h2 className="font-serif font-bold text-[16vw] leading-[0.85] text-fg lg:text-[11vw]">
-            The Schedule
-          </h2>
+          <div>
+            <h2 className="font-serif font-bold text-[16vw] leading-[0.85] text-fg lg:text-[11vw]">
+              The Schedule
+            </h2>
+            <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-dotted border-fg/40 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-fg/60">
+              Coming soon — dates &amp; timings not yet finalized
+            </span>
+          </div>
           <div className="flex gap-2">
             {days.map((d) => (
               <button key={d.id} onClick={() => setActive(d.id)} className={pill(active === d.id)}>

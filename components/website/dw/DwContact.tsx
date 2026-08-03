@@ -10,6 +10,7 @@ const columns: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Schedule", href: "/schedule" },
       { label: "Map", href: "/map" },
       { label: "Tickets", href: "/passes" },
+      { label: "Scavenger Hunt", href: "/scavenger-hunt" },
       { label: "Gallery", href: "/gallery" },
     ],
   },
@@ -22,16 +23,57 @@ const columns: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Team", href: "/about" },
     ],
   },
-  {
-    title: "Follow",
-    links: [
-      { label: "Instagram", href: "/contact" },
-      { label: "Facebook", href: "/contact" },
-      { label: "YouTube", href: "/contact" },
-      { label: "LinkedIn", href: "/contact" },
-    ],
-  },
 ];
+
+// Official NUST accounts — not orientation-specific pages, so these link out
+// rather than to /contact.
+const socials = [
+  { label: "Instagram", href: "https://www.instagram.com/nustgram/" },
+  { label: "Facebook", href: "https://www.facebook.com/nustofficial/" },
+  { label: "YouTube", href: "https://www.youtube.com/channel/UC7LwGPPk9zPYwUbtGKBJy5g" },
+  { label: "LinkedIn", href: "https://pk.linkedin.com/school/nustofficial" },
+];
+
+const socialIcons: Record<string, React.ReactNode> = {
+  Instagram: (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+      <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="17.2" cy="6.8" r="1" fill="currentColor" />
+    </svg>
+  ),
+  Facebook: (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+      <path
+        d="M14 9h2.5V6H14c-1.93 0-3.5 1.57-3.5 3.5V11H8v3h2.5v6h3v-6h2.3l.5-3h-2.8V9.7c0-.5.2-.7.6-.7Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  YouTube: (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+      <rect x="3" y="6" width="18" height="12" rx="3" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M10.5 9.5v5l4.5-2.5-4.5-2.5Z" fill="currentColor" />
+    </svg>
+  ),
+  LinkedIn: (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+      <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="7.5" cy="7.7" r="1.1" fill="currentColor" />
+      <path d="M7.5 10.8v6.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path
+        d="M11 17v-3.6c0-1.2.9-2.1 2-2.1s2 .9 2 2.1V17"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M11 10.8v6.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  ),
+};
 
 export default function DwContact() {
   const [email, setEmail] = useState("");
@@ -101,13 +143,27 @@ export default function DwContact() {
           </div>
 
           {/* Footer columns */}
-          <div className="mt-24 grid gap-10 border-t border-dashed border-inverse-fg/20 pt-12 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-24 grid gap-10 border-t border-dashed border-inverse-fg/20 pt-12 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.png" alt="NUST Orientation" className="h-12 w-auto" />
               <p className="mt-4 font-italic text-sm italic text-inverse-fg/50">
                 NUST Islamabad © 2026
               </p>
+              <div className="mt-5 flex gap-2">
+                {socials.map((s) => (
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={s.label}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-dotted border-inverse-fg/30 text-inverse-fg/80 transition-colors hover:border-inverse-fg hover:text-inverse-fg"
+                  >
+                    {socialIcons[s.label]}
+                  </a>
+                ))}
+              </div>
             </div>
             {columns.map((col) => (
               <div key={col.title}>

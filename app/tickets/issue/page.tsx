@@ -1,4 +1,13 @@
-export default function IssueTicketPage() {
+"use client";
+
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+
+function IssueForm() {
+  const searchParams = useSearchParams();
+  const subject = searchParams.get("subject") ?? "";
+  const body = searchParams.get("body") ?? "";
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
       <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg/50">Support Desk</p>
@@ -12,6 +21,7 @@ export default function IssueTicketPage() {
           Subject
           <input
             type="text"
+            defaultValue={subject}
             placeholder="Missing housing assignment"
             className="mt-2 w-full rounded-full border-2 border-dotted border-fg/25 bg-transparent px-5 py-3 font-mono text-[13px] normal-case tracking-normal text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none"
           />
@@ -47,6 +57,7 @@ export default function IssueTicketPage() {
           Description
           <textarea
             rows={5}
+            defaultValue={body}
             placeholder="Describe your issue..."
             className="mt-2 w-full rounded-2xl border-2 border-dotted border-fg/25 bg-transparent px-5 py-3 font-mono text-[13px] normal-case tracking-normal text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none"
           />
@@ -60,5 +71,13 @@ export default function IssueTicketPage() {
         </button>
       </form>
     </main>
+  );
+}
+
+export default function IssueTicketPage() {
+  return (
+    <Suspense>
+      <IssueForm />
+    </Suspense>
   );
 }
