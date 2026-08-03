@@ -31,8 +31,10 @@
   --color-blue-light: #3d66a9;
   --color-sky: #9fe4ff;
   --color-cream: #f4f1ea;
-  /* Accent recolored to match the logo's magenta, replacing the old orange. */
-  --color-ember: #c21f72;
+  /* Accent recolored to lean into the site's own blue family (was magenta,
+     orange before that) — drawn straight from --color-blue so the palette
+     reads cooler without introducing a new hue. */
+  --color-ember: #2a5290;
 }
 
 /* Theme-aware semantic tokens (non-inline so they can be overridden per theme) */
