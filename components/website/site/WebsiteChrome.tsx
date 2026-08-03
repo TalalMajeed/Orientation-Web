@@ -1,16 +1,16 @@
 "use client";
 
-import SmoothScroll from "@/components/website/SmoothScroll";
 import ThemeToggle from "@/components/website/site/ThemeToggle";
+import CookieConsent from "@/components/website/site/CookieConsent";
 
-// Website-only chrome (smooth scroll, theme toggle, film grain).
+// Website-only chrome (theme toggle, film grain, cookie consent).
 // Kept out of the root layout so the ticketing/admin pages are untouched.
 export default function WebsiteChrome() {
   return (
     <>
-      <SmoothScroll />
       <ThemeToggle />
       <div className="grain-overlay" aria-hidden />
+      <CookieConsent />
     </>
   );
 }

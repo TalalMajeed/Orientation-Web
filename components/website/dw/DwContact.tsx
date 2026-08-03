@@ -70,7 +70,7 @@ export default function DwContact() {
           {/* Newsletter */}
           <p className="font-italic text-sm italic text-inverse-fg/50">— Stay in the loop</p>
           <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-            <h2 className="font-serif font-bold text-[13vw] leading-[0.85] text-inverse-fg lg:text-[8vw]">
+            <h2 className="font-serif font-bold text-[8vw] leading-[0.85] text-inverse-fg lg:text-[4.5vw]">
               Don&apos;t miss a moment
             </h2>
             <form onSubmit={submit} className="w-full">
@@ -128,29 +128,22 @@ export default function DwContact() {
             ))}
           </div>
 
-          {/* Get in touch */}
-          <div className="mt-16">
-            <p className="font-italic text-sm italic text-inverse-fg/50">
-              Let&apos;s make your story unforgettable
-            </p>
-            <Link
-              href="/contact"
-              className="link-sweep mt-2 font-serif font-bold text-[20vw] leading-[0.8] text-inverse-fg lg:text-[15vw]"
-            >
-              Get in touch
-            </Link>
-          </div>
-
           {/* Credit */}
-          <div className="mt-20 flex flex-col items-start justify-between gap-3 border-t border-dashed border-inverse-fg/20 pt-6 sm:flex-row sm:items-center">
-            <a
-              href="https://www.linkedin.com/in/faseeh06"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="link-sweep font-italic text-base italic text-inverse-fg/80"
-            >
-              UI designed by Faseeh
-            </a>
+          <div className="mt-16 flex flex-col items-start justify-between gap-4 border-t border-dashed border-inverse-fg/20 pt-6 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/privacy"
+                className="link-sweep font-italic text-sm italic text-inverse-fg/60"
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                href="/terms"
+                className="link-sweep font-italic text-sm italic text-inverse-fg/60"
+              >
+                Terms of Service
+              </Link>
+            </div>
             <span dir="rtl" lang="ur" className="font-urdu text-lg text-inverse-fg/50">
               اب کہانی تمہاری ہے
             </span>

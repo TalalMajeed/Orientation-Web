@@ -38,6 +38,10 @@ export const metadata: Metadata = {
   title: "NUST Orientation — Ab Kahani Tumhari Hai",
   description:
     "Orientation Week hub for incoming NUST students — schedule, campus map, tickets and everything you need to start your story.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+  },
 };
 
 export default function RootLayout({

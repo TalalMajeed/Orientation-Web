@@ -30,6 +30,7 @@ export default function EntryExperience() {
     }
     setEntered(true);
     window.scrollTo(0, 0);
+    window.dispatchEvent(new Event("site:entered"));
     // Unmount the gate (and free its WebGL context) after the fade.
     window.setTimeout(() => setGone(true), 800);
   };
@@ -38,6 +39,7 @@ export default function EntryExperience() {
     <>
       {!gone && (
         <div
+          data-entry-gate
           className={`fixed inset-0 z-[10000] flex flex-col items-center justify-center overflow-hidden px-6 text-center transition-opacity duration-700 ${
             entered ? "pointer-events-none opacity-0" : "opacity-100"
           }`}
