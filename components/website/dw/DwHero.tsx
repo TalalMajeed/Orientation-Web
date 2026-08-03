@@ -107,8 +107,10 @@ export default function DwHero() {
         {/* Top bar */}
         <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-5 py-5 sm:px-9">
           <Link href="/" className="flex items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="NUST Orientation" className="h-10 w-auto sm:h-12" />
+            <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dotted border-cream/70 bg-ink/35 shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-md sm:h-16 sm:w-16">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="NUST Orientation" className="h-8 w-auto sm:h-10" />
+            </span>
           </Link>
 
           <nav className="hidden items-center gap-2 md:flex">

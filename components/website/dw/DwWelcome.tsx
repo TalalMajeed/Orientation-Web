@@ -35,7 +35,7 @@ export default function DwWelcome() {
                 Orientation
               </h2>
             </div>
-            <AnimatedLogo className="h-20 w-20 shrink-0 sm:h-28 sm:w-28" />
+            <AnimatedLogo className="h-16 w-auto shrink-0 sm:h-24" />
           </div>
           <p dir="rtl" lang="ur" className="mt-2 font-urdu text-3xl text-ember sm:text-5xl">
             اب کہانی تمہاری ہے

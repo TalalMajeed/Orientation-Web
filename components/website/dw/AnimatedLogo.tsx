@@ -4,10 +4,9 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 
 // A small continuous "idle" animation — gentle float + sway, looping forever.
-// The glass circle mirrors the hero section's translucent pill buttons; the
-// whole thing is decorative (aria-hidden), so it never competes with content.
+// Purely decorative (aria-hidden), so it never competes with real content.
 export default function AnimatedLogo({ className }: { className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     const el = ref.current;
@@ -24,13 +23,7 @@ export default function AnimatedLogo({ className }: { className?: string }) {
   }, []);
 
   return (
-    <div
-      ref={ref}
-      aria-hidden
-      className={`flex items-center justify-center rounded-full border-2 border-dotted border-fg/25 bg-fg/[0.04] backdrop-blur-md shadow-[0_2px_16px_rgba(0,0,0,0.08)] ${className ?? ""}`}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logo.png" alt="" className="h-[58%] w-[58%] object-contain" />
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img ref={ref} src="/logo.png" alt="" aria-hidden className={className} />
   );
 }
