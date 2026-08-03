@@ -120,6 +120,13 @@ export function verifyCredentials(
     return "hunt";
   }
 
+  // TEMPORARY: any non-empty username/password logs in as "hunt" while the
+  // hunt team's real credentials are still being sorted out. Remove this once
+  // HUNT_USERNAME/HUNT_PASSWORD are the only way in.
+  if (candidateUsername.trim() && candidatePassword.trim()) {
+    return "hunt";
+  }
+
   return null;
 }
 
