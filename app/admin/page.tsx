@@ -44,6 +44,13 @@ const PORTALS: Portal[] = [
     color: "#B8860B",
     hint: "Admin credentials",
   },
+  {
+    name: "Hunt",
+    desc: "Generate QR codes & run the scavenger hunt",
+    href: "/login?next=/hunt",
+    color: "#8F3410",
+    hint: "Hunt team or admin credentials",
+  },
 ];
 
 export default function AdminHub() {

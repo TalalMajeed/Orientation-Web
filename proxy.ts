@@ -18,7 +18,12 @@ import {
 const GUARDED: { prefix: string; roles: StaffRole[] }[] = [
   { prefix: "/event-tickets", roles: ["admin"] },
   { prefix: "/hr", roles: ["admin"] },
+  { prefix: "/hunt", roles: ["admin", "hunt"] },
 ];
+
+// Paths that sit under a guarded prefix but must stay public — /hunt/c/<code>
+// is the page a student's phone opens straight from the QR, with no session.
+const PUBLIC_EXCEPTIONS = ["/hr/login", "/hunt/c"];
 
 /**
  * Redirects only — never the security boundary. Every route handler re-checks
@@ -27,8 +32,11 @@ const GUARDED: { prefix: string; roles: StaffRole[] }[] = [
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Already a redirect to the shared login page; gating it would loop.
-  if (pathname === "/hr/login") {
+  if (
+    PUBLIC_EXCEPTIONS.some(
+      (exception) => pathname === exception || pathname.startsWith(`${exception}/`)
+    )
+  ) {
     return NextResponse.next();
   }
 

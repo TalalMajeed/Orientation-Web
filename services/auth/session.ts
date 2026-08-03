@@ -9,14 +9,14 @@ dotenv.config();
 const SESSION_COOKIE_NAME = "hr_session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
 
-export type StaffRole = "admin" | "scanner";
+export type StaffRole = "admin" | "scanner" | "hunt";
 
 export interface StaffSession {
   role: StaffRole;
   expiresAt: number;
 }
 
-const ROLES: StaffRole[] = ["admin", "scanner"];
+const ROLES: StaffRole[] = ["admin", "scanner", "hunt"];
 
 function isStaffRole(candidate: string): candidate is StaffRole {
   return (ROLES as string[]).includes(candidate);
@@ -68,8 +68,8 @@ function matches(
 /**
  * Resolves credentials to a role. Admin credentials are the pre-existing
  * HR_USERNAME/HR_PASSWORD pair, so the HR invite-link panel keeps working.
- * Scanner credentials are optional: if they are not configured, nobody can log
- * in as a scanner, but admin login is unaffected.
+ * Scanner and Hunt credentials are optional: if either is not configured,
+ * nobody can log in as that role, but admin login is unaffected.
  */
 export function verifyCredentials(
   candidateUsername: string,
@@ -79,6 +79,8 @@ export function verifyCredentials(
   const adminPassword = process.env.HR_PASSWORD;
   const scannerUsername = process.env.SCANNER_USERNAME;
   const scannerPassword = process.env.SCANNER_PASSWORD;
+  const huntUsername = process.env.HUNT_USERNAME;
+  const huntPassword = process.env.HUNT_PASSWORD;
 
   if (!adminUsername || !adminPassword) {
     throw new Error(
@@ -94,6 +96,10 @@ export function verifyCredentials(
     matches(candidateUsername, candidatePassword, scannerUsername, scannerPassword)
   ) {
     return "scanner";
+  }
+
+  if (matches(candidateUsername, candidatePassword, huntUsername, huntPassword)) {
+    return "hunt";
   }
 
   return null;

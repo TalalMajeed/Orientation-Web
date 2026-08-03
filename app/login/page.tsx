@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 const DEFAULT_LANDING: Record<string, string> = {
   admin: "/event-tickets",
   scanner: "/socials",
+  hunt: "/hunt",
 };
 
 /** Only same-origin relative paths, so ?next= cannot bounce staff off-site. */
@@ -49,9 +50,10 @@ function LoginForm() {
       const role = typeof data.role === "string" ? data.role : "admin";
       const next = safeNext(searchParams.get("next"));
 
-      // A scanner sent to an admin page would only bounce back here.
+      // A scanner or hunt-only login sent to an admin page would only bounce
+      // back here, so each scoped role gets its own default landing.
       const destination =
-        role === "scanner" ? DEFAULT_LANDING.scanner : next ?? DEFAULT_LANDING.admin;
+        role === "scanner" || role === "hunt" ? DEFAULT_LANDING[role] : (next ?? DEFAULT_LANDING.admin);
 
       router.push(destination);
       router.refresh();
