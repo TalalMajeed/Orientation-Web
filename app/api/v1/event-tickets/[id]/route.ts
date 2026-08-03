@@ -26,7 +26,7 @@ function handleLifecycleError(error: unknown): NextResponse {
 
 /** Revoke. Frees the holder to be issued a fresh ticket for this event. */
 export async function DELETE(request: NextRequest, { params }: RouteContext) {
-  const denied = requireRole(request, "admin");
+  const denied = requireRole(request, "admin", "ticketing");
 
   if (denied) {
     return denied;
@@ -54,7 +54,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
  * keeps working.
  */
 export async function POST(request: NextRequest, { params }: RouteContext) {
-  const denied = requireRole(request, "admin");
+  const denied = requireRole(request, "admin", "ticketing");
 
   if (denied) {
     return denied;

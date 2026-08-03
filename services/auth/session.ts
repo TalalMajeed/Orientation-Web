@@ -9,14 +9,18 @@ dotenv.config();
 const SESSION_COOKIE_NAME = "hr_session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
 
-export type StaffRole = "admin" | "scanner";
+/**
+ * `ticketing` is the event head: everything `admin` can do with tickets and the
+ * gate, minus the HR invite-link panel — that stays with HR.
+ */
+export type StaffRole = "admin" | "ticketing" | "scanner";
 
 export interface StaffSession {
   role: StaffRole;
   expiresAt: number;
 }
 
-const ROLES: StaffRole[] = ["admin", "scanner"];
+const ROLES: StaffRole[] = ["admin", "ticketing", "scanner"];
 
 function isStaffRole(candidate: string): candidate is StaffRole {
   return (ROLES as string[]).includes(candidate);
@@ -68,8 +72,8 @@ function matches(
 /**
  * Resolves credentials to a role. Admin credentials are the pre-existing
  * HR_USERNAME/HR_PASSWORD pair, so the HR invite-link panel keeps working.
- * Scanner credentials are optional: if they are not configured, nobody can log
- * in as a scanner, but admin login is unaffected.
+ * Ticketing and scanner credentials are optional: if a pair is not configured,
+ * nobody can log in as that role, but admin login is unaffected.
  */
 export function verifyCredentials(
   candidateUsername: string,
@@ -77,6 +81,8 @@ export function verifyCredentials(
 ): StaffRole | null {
   const adminUsername = process.env.HR_USERNAME;
   const adminPassword = process.env.HR_PASSWORD;
+  const ticketingUsername = process.env.TICKETING_ADMIN_USERNAME;
+  const ticketingPassword = process.env.TICKETING_ADMIN_PASSWORD;
   const scannerUsername = process.env.SCANNER_USERNAME;
   const scannerPassword = process.env.SCANNER_PASSWORD;
 
@@ -88,6 +94,17 @@ export function verifyCredentials(
 
   if (matches(candidateUsername, candidatePassword, adminUsername, adminPassword)) {
     return "admin";
+  }
+
+  if (
+    matches(
+      candidateUsername,
+      candidatePassword,
+      ticketingUsername,
+      ticketingPassword
+    )
+  ) {
+    return "ticketing";
   }
 
   if (

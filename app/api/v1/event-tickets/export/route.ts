@@ -19,7 +19,7 @@ function slugify(value: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const denied = requireRole(request, "admin");
+  const denied = requireRole(request, "admin", "ticketing");
 
   if (denied) {
     return denied;

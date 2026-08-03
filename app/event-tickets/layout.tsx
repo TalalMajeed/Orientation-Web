@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import AccessNotice from "@/components/tickets/AccessNotice";
+
 const tabs = [
   { href: "/event-tickets", label: "Overview" },
   { href: "/event-tickets/issue", label: "Issue" },
@@ -12,6 +14,9 @@ export default function EventTicketsLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
+      {/* A ticketing admin bounced off /hr lands here; without this the page
+          they asked for just silently vanishes. */}
+      <AccessNotice inline />
       <header className="border-b border-neutral-200 bg-white">
         <nav className="mx-auto flex max-w-5xl items-center gap-1 px-6 py-3 text-sm">
           <span className="mr-4 font-semibold tracking-tight">Event Tickets</span>

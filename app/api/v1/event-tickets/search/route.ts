@@ -17,7 +17,7 @@ const MAX_RESULTS = 20;
  * to page through the whole attendee list.
  */
 export async function GET(request: NextRequest) {
-  const denied = requireRole(request, "scanner", "admin");
+  const denied = requireRole(request, "scanner", "admin", "ticketing");
 
   if (denied) {
     return denied;

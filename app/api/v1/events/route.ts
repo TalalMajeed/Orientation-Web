@@ -6,7 +6,7 @@ import { badRequest, readJsonBody, readString } from "@/services/tickets/request
 
 /** Scanners need this to choose their gate's event at setup. */
 export async function GET(request: NextRequest) {
-  const denied = requireRole(request, "admin", "scanner");
+  const denied = requireRole(request, "admin", "ticketing", "scanner");
 
   if (denied) {
     return denied;
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const denied = requireRole(request, "admin");
+  const denied = requireRole(request, "admin", "ticketing");
 
   if (denied) {
     return denied;

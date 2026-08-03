@@ -57,23 +57,23 @@ Scale: **~500–2000 attendees, 1–2 gates.** Several orientation sessions
 
 ```
 app/
-  event-tickets/            role: admin
+  event-tickets/            role: admin or ticketing
     page.tsx                counters, event picker, event creation
     issue/                  single issue, bulk CSV, send queue
     list/                   table, search, filters, revoke, resend, export
-  scan/                     role: scanner or admin — top level, staff type it
+  scan/                     role: scanner, ticketing or admin — top level, staff type it
   login/                    shared login, redirects by role
   api/v1/
     auth/login              POST sign in, DELETE sign out
     checkin                 POST — the atomic update
     checkin/manual          POST — same update, keyed on _id
-    events                  GET (both roles), POST (admin)
+    events                  GET (all roles), POST (admin, ticketing)
     event-tickets           GET list + stats, POST issue
     event-tickets/[id]      DELETE revoke, POST resend
     event-tickets/bulk      POST — inserts rows only
     event-tickets/drain     POST send a batch, GET queue depth
     event-tickets/export    GET CSV
-    event-tickets/search    GET — gate lookup, both roles
+    event-tickets/search    GET — gate lookup, all roles
 proxy.ts                    role gating and redirects
 services/
   auth/session.ts           signed cookie with a role
@@ -161,12 +161,25 @@ role appended outside the signature could be rewritten from `scanner` to
 rejected.
 
 - `HR_USERNAME` / `HR_PASSWORD` → role `admin` (the HR invite-link panel keeps working)
+- `TICKETING_ADMIN_USERNAME` / `TICKETING_ADMIN_PASSWORD` → role `ticketing` (optional)
 - `SCANNER_USERNAME` / `SCANNER_PASSWORD` → role `scanner` (optional; if unset, nobody can log in as one)
 
 `scanner` reaches `/scan`, `POST /api/v1/checkin`, `POST /api/v1/checkin/manual`,
 `GET /api/v1/events` and the narrow gate search — nothing else. It cannot list,
 issue, revoke, or export, so a phone left unlocked at the gate costs you
 "someone can scan tickets", not a full attendee dump.
+
+`ticketing` is the **ticketing admin** — the event head. It reaches everything
+`admin` does under `/event-tickets`, `/scan`, `/api/v1/event-tickets/*`,
+`/api/v1/checkin*` and `/api/v1/events`: create events, issue, bulk import,
+drain the send queue, revoke, resend, export, scan, manual check-in. What it does
+**not** reach is `/hr` and `/api/v1/hr/links*` — the invite-link panel belongs to
+HR, and the event head has no reason to mint invite links. That is the only
+difference between the two roles, and `npm run e2e` asserts both directions.
+
+Splitting it out rather than handing over the HR credentials means the event
+head's password can be rotated on its own, and the two roles are separable in
+`scan_log` reasoning if a credential ever leaks.
 
 `proxy.ts` (Next 16's replacement for `middleware.ts`) handles redirects.
 It always runs on the Node runtime, so it reuses the real session module rather
@@ -292,7 +305,7 @@ standalone server, so no replica set is needed.
 - The retry budget stops a permanently failing send; resend restores it
 - The raw token appears in no response, no stored document, and no scan_log row
 
-`npm run e2e` — 35 checks against a real `mongod` **and** a real Next server,
+`npm run e2e` — 43 checks against a real `mongod` **and** a real Next server,
 started and torn down by the script. Covers role separation, cookie tampering,
 redirects, the race over HTTP, the gate fallback, bulk, the send queue, the
 lifecycle, and the export.

@@ -29,7 +29,7 @@ export interface BulkOutcome {
  * for a few thousand rows.
  */
 export async function POST(request: NextRequest) {
-  const denied = requireRole(request, "admin");
+  const denied = requireRole(request, "admin", "ticketing");
 
   if (denied) {
     return denied;

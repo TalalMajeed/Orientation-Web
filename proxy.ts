@@ -14,14 +14,15 @@ import {
  * Route segment config is not allowed here, so the path filter lives inline.
  */
 const GUARDED: { prefix: string; roles: StaffRole[] }[] = [
-  { prefix: "/scan", roles: ["scanner", "admin"] },
-  { prefix: "/event-tickets", roles: ["admin"] },
+  { prefix: "/scan", roles: ["scanner", "admin", "ticketing"] },
+  { prefix: "/event-tickets", roles: ["admin", "ticketing"] },
   { prefix: "/hr", roles: ["admin"] },
 ];
 
 /** Where each role belongs when the page they asked for is not theirs. */
 const LANDING: Record<StaffRole, string> = {
   admin: "/event-tickets",
+  ticketing: "/event-tickets",
   scanner: "/scan",
 };
 
