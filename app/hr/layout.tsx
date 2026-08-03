@@ -3,5 +3,5 @@ export default function HrLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <div className="min-h-screen bg-neutral-50 text-neutral-900">{children}</div>;
+  return <div className="min-h-screen bg-surface text-fg">{children}</div>;
 }

@@ -15,9 +15,9 @@ const FILTERS: { label: string; value: TicketStatus | "all" }[] = [
 ];
 
 const STATUS_STYLES: Record<TicketStatus, string> = {
-  issued: "bg-blue-100 text-blue-700",
-  used: "bg-green-100 text-green-700",
-  revoked: "bg-neutral-200 text-neutral-600",
+  issued: "border border-sky/40 bg-sky/15 text-fg",
+  used: "border border-transparent bg-fg text-surface",
+  revoked: "border border-ember/40 bg-ember/10 text-ember",
 };
 
 export default function TicketList() {
@@ -117,16 +117,21 @@ export default function TicketList() {
 
   const lastPage = Math.max(1, Math.ceil(total / pageSize));
 
+  const pill =
+    "rounded-full border-2 border-dotted px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors";
+  const pillOn = "border-transparent bg-fg text-surface";
+  const pillOff = "border-fg/40 text-fg hover:border-fg";
+
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Tickets</h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <h1 className="font-serif text-5xl font-bold text-fg">Tickets</h1>
         <div className="flex items-center gap-2">
           <EventPicker events={events} eventId={eventId} onSelect={selectEvent} />
           {eventId && (
             <a
               href={`/api/v1/event-tickets/export?eventId=${eventId}`}
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium hover:bg-neutral-50"
+              className={`${pill} ${pillOff}`}
             >
               Export CSV
             </a>
@@ -134,23 +139,20 @@ export default function TicketList() {
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="mt-8 flex flex-wrap items-center gap-3">
         <form onSubmit={submitSearch} className="flex gap-2">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search name or email"
-            className="w-64 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400"
+            className="w-64 rounded-full border-2 border-dotted border-fg/40 bg-transparent px-4 py-1.5 font-mono text-[11px] text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none"
           />
-          <button
-            type="submit"
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium hover:bg-neutral-50"
-          >
+          <button type="submit" className={`${pill} ${pillOff}`}>
             Search
           </button>
         </form>
 
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-2">
           {FILTERS.map((filter) => (
             <button
               key={filter.value}
@@ -159,11 +161,7 @@ export default function TicketList() {
                 setPage(1);
                 setStatus(filter.value);
               }}
-              className={`rounded-md px-3 py-2 text-sm font-medium ${
-                status === filter.value
-                  ? "bg-neutral-900 text-white"
-                  : "border border-neutral-300 hover:bg-neutral-50"
-              }`}
+              className={`${pill} ${status === filter.value ? pillOn : pillOff}`}
             >
               {filter.label}
             </button>
@@ -172,27 +170,26 @@ export default function TicketList() {
       </div>
 
       {notice && (
-        <p className="mt-4 rounded-md border border-neutral-200 bg-white p-3 text-sm">
+        <p className="mt-5 rounded-2xl border border-dashed border-fg/25 bg-fg/[0.02] p-4 font-mono text-[12px] leading-relaxed text-fg/70">
           {notice}
         </p>
       )}
 
-      <div className="mt-6 overflow-x-auto rounded-lg border border-neutral-200 bg-white">
-        <table className="w-full min-w-[880px] text-left text-sm">
-          <thead className="bg-neutral-50 text-neutral-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Emailed</th>
-              <th className="px-4 py-3 font-medium">Checked in</th>
-              <th className="px-4 py-3 font-medium">Actions</th>
+      <div className="mt-6 overflow-x-auto rounded-2xl border border-fg/12">
+        <table className="w-full min-w-[880px] border-collapse text-left font-mono text-[12px]">
+          <thead>
+            <tr className="border-b border-fg/15 text-fg/45">
+              {["Name", "Email", "Status", "Emailed", "Checked in", "Actions"].map((h) => (
+                <th key={h} className="px-4 py-3 text-[10px] uppercase tracking-[0.12em]">
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-200">
+          <tbody>
             {loading && (
               <tr>
-                <td className="px-4 py-3 text-neutral-500" colSpan={6}>
+                <td className="px-4 py-4 text-fg/45" colSpan={6}>
                   Loading…
                 </td>
               </tr>
@@ -200,44 +197,44 @@ export default function TicketList() {
 
             {!loading && tickets.length === 0 && (
               <tr>
-                <td className="px-4 py-3 text-neutral-500" colSpan={6}>
+                <td className="px-4 py-8 text-center uppercase tracking-[0.1em] text-fg/40" colSpan={6}>
                   No tickets match.
                 </td>
               </tr>
             )}
 
             {tickets.map((ticket) => (
-              <tr key={ticket.id} className="hover:bg-neutral-50">
-                <td className="px-4 py-3 font-medium">{ticket.holderName}</td>
-                <td className="px-4 py-3 text-neutral-500">{ticket.email}</td>
+              <tr key={ticket.id} className="border-b border-fg/8 text-fg/80 transition-colors hover:bg-fg/[0.03]">
+                <td className="px-4 py-3 font-sans font-medium text-fg">{ticket.holderName}</td>
+                <td className="px-4 py-3 text-fg/60">{ticket.email}</td>
                 <td className="px-4 py-3">
                   <span
-                    className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_STYLES[ticket.status]}`}
+                    className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] ${STATUS_STYLES[ticket.status]}`}
                   >
                     {ticket.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-neutral-500">
+                <td className="px-4 py-3 text-fg/60">
                   {ticket.emailError ? (
-                    <span className="text-red-600" title={ticket.emailError}>
+                    <span className="text-ember" title={ticket.emailError}>
                       Failed ({ticket.emailAttempts})
                     </span>
                   ) : (
                     formatPakistanDateTime(ticket.emailSentAt)
                   )}
                 </td>
-                <td className="px-4 py-3 text-neutral-500">
+                <td className="px-4 py-3 text-fg/60">
                   {formatPakistanDateTime(ticket.usedAt)}
                   {ticket.usedGate ? ` · ${ticket.usedGate}` : ""}
                 </td>
-                <td className="space-x-3 px-4 py-3 whitespace-nowrap">
+                <td className="space-x-3 whitespace-nowrap px-4 py-3">
                   {ticket.status === "issued" ? (
                     <>
                       <button
                         type="button"
                         disabled={busyId === ticket.id}
                         onClick={() => resend(ticket)}
-                        className="text-neutral-900 underline disabled:opacity-50"
+                        className="uppercase tracking-[0.08em] text-fg underline decoration-dotted underline-offset-4 transition-colors hover:text-sky disabled:opacity-50"
                       >
                         Resend
                       </button>
@@ -245,13 +242,13 @@ export default function TicketList() {
                         type="button"
                         disabled={busyId === ticket.id}
                         onClick={() => revoke(ticket)}
-                        className="text-red-600 underline disabled:opacity-50"
+                        className="uppercase tracking-[0.08em] text-ember underline decoration-dotted underline-offset-4 disabled:opacity-50"
                       >
                         Revoke
                       </button>
                     </>
                   ) : (
-                    <span className="text-neutral-400">—</span>
+                    <span className="text-fg/30">—</span>
                   )}
                 </td>
               </tr>
@@ -260,7 +257,7 @@ export default function TicketList() {
         </table>
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-sm text-neutral-500">
+      <div className="mt-5 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.1em] text-fg/50">
         <span>
           {total} ticket{total === 1 ? "" : "s"} · page {page} of {lastPage}
         </span>
@@ -269,7 +266,7 @@ export default function TicketList() {
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((current) => current - 1)}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 font-medium disabled:opacity-40"
+            className="rounded-full border-2 border-dotted border-fg/40 px-4 py-1.5 text-fg transition-colors hover:border-fg disabled:opacity-30"
           >
             Previous
           </button>
@@ -277,7 +274,7 @@ export default function TicketList() {
             type="button"
             disabled={page >= lastPage}
             onClick={() => setPage((current) => current + 1)}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 font-medium disabled:opacity-40"
+            className="rounded-full border-2 border-dotted border-fg/40 px-4 py-1.5 text-fg transition-colors hover:border-fg disabled:opacity-30"
           >
             Next
           </button>

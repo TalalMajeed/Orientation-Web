@@ -15,23 +15,32 @@ export default function EventPicker({
 }) {
   if (events.length === 0) {
     return (
-      <p className="text-sm text-neutral-500">
-        No events yet — create one before issuing tickets.
+      <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg/50">
+        No events yet — create one first.
       </p>
     );
   }
 
   return (
-    <select
-      value={eventId ?? ""}
-      onChange={(event) => onSelect(event.target.value)}
-      className={`rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400 ${className}`}
-    >
-      {events.map((event) => (
-        <option key={event.id} value={event.id}>
-          {event.name}
-        </option>
-      ))}
-    </select>
+    <div className={`relative inline-block ${className}`}>
+      <select
+        value={eventId ?? ""}
+        onChange={(event) => onSelect(event.target.value)}
+        className="w-full cursor-pointer appearance-none rounded-full border-2 border-dotted border-fg/40 bg-surface py-2 pl-4 pr-10 font-mono text-[11px] uppercase tracking-[0.1em] text-fg transition-colors hover:border-fg focus:border-fg focus:outline-none"
+      >
+        {events.map((event) => (
+          <option key={event.id} value={event.id}>
+            {event.name}
+          </option>
+        ))}
+      </select>
+      <svg
+        aria-hidden
+        viewBox="0 0 12 12"
+        className="pointer-events-none absolute right-4 top-1/2 h-2.5 w-2.5 -translate-y-1/2 text-fg/50"
+      >
+        <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
   );
 }

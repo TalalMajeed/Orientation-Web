@@ -6,7 +6,7 @@ import Link from "next/link";
 const navLinks = [
   { href: "/schedule", label: "Schedule" },
   { href: "/map", label: "Map" },
-  { href: "/event-tickets", label: "Tickets" },
+  { href: "/passes", label: "Tickets" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -34,8 +34,10 @@ export default function DwHero() {
     if (!v.muted) v.play().catch(() => {});
   };
 
+  // A persistent frosted-glass backing keeps these legible over any frame of
+  // the hero video, bright or dark — not just on hover.
   const pill =
-    "touch-manipulation rounded-full border-2 border-dotted border-cream/70 px-4 py-1.5 font-italic italic text-sm text-cream transition-colors hover:border-transparent hover:bg-cream hover:text-ink active:bg-cream active:text-ink";
+    "touch-manipulation rounded-full border-2 border-dotted border-cream/70 bg-ink/35 px-4 py-1.5 font-italic italic text-sm text-cream shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-md transition-colors hover:border-transparent hover:bg-cream hover:text-ink active:bg-cream active:text-ink";
 
   return (
     <section className="h-[100svh] w-full">

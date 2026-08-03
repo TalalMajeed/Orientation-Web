@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   // R3F WebGL canvases don't survive StrictMode's dev-only double-mount
   // (mount → unmount → remount drops the GL context on first load).
   reactStrictMode: false,
+  // Allow the ngrok tunnel to load dev assets/HMR (dev-only).
+  allowedDevOrigins: ["pavilion-unblended-canopy.ngrok-free.dev"],
 };
 
 export default nextConfig;

@@ -31,7 +31,8 @@
   --color-blue-light: #3d66a9;
   --color-sky: #9fe4ff;
   --color-cream: #f4f1ea;
-  --color-ember: #d85503;
+  /* Accent recolored to match the logo's magenta, replacing the old orange. */
+  --color-ember: #c21f72;
 }
 
 /* Theme-aware semantic tokens (non-inline so they can be overridden per theme) */
@@ -48,6 +49,15 @@
   --color-inverse-surface: #f4f1ea;
   --color-inverse-fg: #0b0f18;
 }
+
+/* Make native controls (select popups, date pickers, spinners) follow the theme. */
+:root { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+/* Compact pill number inputs read cleaner without the browser spinner. */
+input.no-spinner { appearance: textfield; -moz-appearance: textfield; }
+input.no-spinner::-webkit-inner-spin-button,
+input.no-spinner::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
 body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;

@@ -8,8 +8,6 @@ import { parseQrPayload } from "@/services/tickets/qr";
 import { formatPakistanTime } from "@/services/tickets/time";
 import type { CheckInResponse, CheckInResult } from "@/services/tickets/types";
 
-const GATE_STORAGE_KEY = "orientation.gate";
-
 /** The camera decodes the same code many times per second. */
 const REPEAT_SUPPRESSION_MS = 3_000;
 /** How long a ticket THIS device admitted still reads as amber, not red. */
@@ -60,7 +58,6 @@ interface SearchHit {
 
 export default function Scanner() {
   const { events, eventId, selectedEvent, selectEvent } = useEvents();
-  const [gate, setGate] = useState("");
   const [scanning, setScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel | null>(null);
@@ -78,24 +75,12 @@ export default function Scanner() {
   const admittedRef = useRef(new Map<string, number>());
   const dismissRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventIdRef = useRef<string | null>(null);
-  const gateRef = useRef("");
 
   // The decode callback is created once and captured by the scanner, so it
-  // reads the current event and gate through refs rather than closing over
-  // stale state.
+  // reads the current event through a ref rather than closing over stale state.
   useEffect(() => {
     eventIdRef.current = eventId;
-    gateRef.current = gate;
-  }, [eventId, gate]);
-
-  useEffect(() => {
-    const remembered = window.localStorage.getItem(GATE_STORAGE_KEY);
-
-    if (remembered) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring saved gate on mount
-      setGate(remembered);
-    }
-  }, []);
+  }, [eventId]);
 
   /**
    * iOS blocks audio until a user gesture, so the context is created by the
@@ -217,7 +202,7 @@ export default function Scanner() {
           body: JSON.stringify({
             token,
             eventId: currentEventId,
-            gate: gateRef.current || "unknown",
+            gate: "unknown",
           }),
         });
 
@@ -245,7 +230,6 @@ export default function Scanner() {
       return;
     }
 
-    window.localStorage.setItem(GATE_STORAGE_KEY, gate);
     setCameraError(null);
 
     try {
@@ -341,7 +325,7 @@ export default function Scanner() {
       body: JSON.stringify({
         ticketId: hit.id,
         eventId,
-        gate: gateRef.current || "unknown",
+        gate: "unknown",
       }),
     });
 
@@ -358,45 +342,40 @@ export default function Scanner() {
 
   if (!scanning) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6 py-12">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Gate scanner</h1>
-          <p className="mt-2 text-sm text-neutral-500">
-            Pick the event and name this gate. Both are remembered on this phone.
+      <main className="flex min-h-screen w-full items-center justify-center bg-surface px-6 py-12 text-fg">
+        <div className="flex w-full max-w-sm flex-col gap-7">
+          <div>
+            <p className="font-italic text-sm italic text-fg/50">— NUST Orientation &apos;26</p>
+            <h1 className="mt-2 font-serif text-5xl font-bold leading-none text-fg sm:text-6xl">
+              Socials
+            </h1>
+            <p className="mt-3 font-mono text-[11px] uppercase leading-relaxed tracking-[0.1em] text-fg/50">
+              Gate check-in. Pick the event, then start scanning — remembered on this phone.
+            </p>
+          </div>
+
+          <label className="block font-mono text-[11px] uppercase tracking-[0.14em] text-fg/60">
+            Event
+            <EventPicker
+              events={events}
+              eventId={eventId}
+              onSelect={selectEvent}
+              className="mt-2 w-full"
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={startScanning}
+            disabled={!eventId}
+            className="rounded-full bg-ember px-6 py-4 font-mono text-[13px] uppercase tracking-[0.16em] text-cream transition hover:brightness-110 disabled:opacity-40"
+          >
+            Start scanning
+          </button>
+          <p className="font-mono text-[10px] uppercase leading-relaxed tracking-[0.1em] text-fg/40">
+            This tap also unlocks the beep — iOS will not play sound without it.
           </p>
         </div>
-
-        <label className="block text-sm font-medium">
-          Event
-          <EventPicker
-            events={events}
-            eventId={eventId}
-            onSelect={selectEvent}
-            className="mt-1 w-full"
-          />
-        </label>
-
-        <label className="block text-sm font-medium">
-          Gate
-          <input
-            value={gate}
-            onChange={(event) => setGate(event.target.value)}
-            placeholder="main-gate"
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-neutral-400"
-          />
-        </label>
-
-        <button
-          type="button"
-          onClick={startScanning}
-          disabled={!eventId}
-          className="rounded-lg bg-neutral-900 px-4 py-5 text-lg font-semibold text-white disabled:opacity-50"
-        >
-          Start scanning
-        </button>
-        <p className="text-xs text-neutral-500">
-          This tap also unlocks the beep — iOS will not play sound without it.
-        </p>
       </main>
     );
   }
@@ -405,26 +384,24 @@ export default function Scanner() {
     <main className="relative min-h-screen bg-black text-white">
       <video ref={videoRef} className="h-screen w-full object-cover" muted playsInline />
 
-      <div className="absolute inset-x-0 top-0 flex items-center justify-between bg-black/60 px-4 py-3 text-sm">
-        <span>
-          {selectedEvent?.name ?? "—"} · {gate || "unknown gate"}
-        </span>
-        <span className="font-semibold tabular-nums">
-          {checkedIn === null ? "—" : checkedIn} in
+      <div className="absolute inset-x-0 top-0 flex items-center justify-between bg-black/60 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.1em] backdrop-blur-sm">
+        <span className="text-white/80">{selectedEvent?.name ?? "—"}</span>
+        <span className="tabular-nums text-white">
+          <span className="text-sky">{checkedIn === null ? "—" : checkedIn}</span> in
         </span>
       </div>
 
       {cameraError && (
-        <p className="absolute inset-x-0 top-14 bg-red-600 px-4 py-3 text-sm">
+        <p className="absolute inset-x-0 top-12 bg-red-600 px-4 py-3 font-mono text-[12px] leading-relaxed text-white">
           {cameraError}
         </p>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 space-y-2 bg-black/60 px-4 py-3">
+      <div className="absolute inset-x-0 bottom-0 space-y-2 bg-black/60 px-4 py-3 backdrop-blur-sm">
         <button
           type="button"
           onClick={() => setManualOpen((open) => !open)}
-          className="w-full rounded-md border border-white/40 px-4 py-3 text-base font-medium"
+          className="w-full rounded-full border-2 border-dotted border-white/40 px-4 py-3 font-mono text-[12px] uppercase tracking-[0.14em] text-white transition-colors hover:border-white"
         >
           {manualOpen ? "Close" : "Can't scan?"}
         </button>
@@ -436,44 +413,53 @@ export default function Scanner() {
                 value={manualQuery}
                 onChange={(event) => setManualQuery(event.target.value)}
                 placeholder="Name or email"
-                className="flex-1 rounded-md bg-white px-3 py-3 text-base text-neutral-900"
+                className="flex-1 rounded-full bg-white px-4 py-3 font-mono text-[14px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
               />
               <button
                 type="submit"
-                className="rounded-md bg-white px-4 py-3 text-base font-medium text-neutral-900"
+                className="rounded-full bg-sky px-5 py-3 font-mono text-[12px] uppercase tracking-[0.14em] text-navy"
               >
                 Find
               </button>
             </form>
 
-            {manualError && <p className="text-sm text-red-300">{manualError}</p>}
+            {manualError && (
+              <p className="font-mono text-[12px] text-red-300">{manualError}</p>
+            )}
 
             {manualHits.map((hit) => (
               <button
                 key={hit.id}
                 type="button"
                 onClick={() => manualCheckIn(hit)}
-                className="flex w-full items-center justify-between rounded-md bg-white/10 px-3 py-3 text-left"
+                className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-left transition-colors hover:bg-white/20"
               >
                 <span>
-                  <span className="block font-medium">{hit.holderName}</span>
-                  <span className="block text-xs text-white/70">{hit.email}</span>
+                  <span className="block font-medium text-white">{hit.holderName}</span>
+                  <span className="block font-mono text-[11px] text-white/70">{hit.email}</span>
                 </span>
-                <span className="text-xs uppercase">{hit.status}</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/70">
+                  {hit.status}
+                </span>
               </button>
             ))}
           </div>
         )}
 
         {!manualOpen && recent.length > 0 && (
-          <ul className="space-y-1 text-xs text-white/80">
-            {recent.map((scan) => (
-              <li key={scan.at} className="flex justify-between">
-                <span>{scan.holderName ?? PANEL_TITLES[scan.kind]}</span>
-                <span>{formatPakistanTime(new Date(scan.at))}</span>
-              </li>
-            ))}
-          </ul>
+          <div>
+            <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-white/40">
+              Scan history
+            </p>
+            <ul className="space-y-1 font-mono text-[11px] text-white/80">
+              {recent.map((scan) => (
+                <li key={scan.at} className="flex justify-between">
+                  <span>{scan.holderName ?? PANEL_TITLES[scan.kind]}</span>
+                  <span className="text-white/50">{formatPakistanTime(new Date(scan.at))}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 
@@ -487,14 +473,14 @@ export default function Scanner() {
 
           {/* The name is the check: staff compare it against the person. */}
           {panel.holderName && (
-            <p className="mt-6 text-4xl font-bold break-words">{panel.holderName}</p>
+            <p className="mt-6 break-words font-serif text-5xl font-bold">{panel.holderName}</p>
           )}
-          {panel.email && <p className="mt-2 text-base opacity-80">{panel.email}</p>}
+          {panel.email && <p className="mt-2 font-mono text-sm opacity-80">{panel.email}</p>}
 
-          <p className="mt-6 text-2xl font-semibold tracking-wide">
+          <p className="mt-6 font-mono text-2xl font-semibold uppercase tracking-[0.12em]">
             {PANEL_TITLES[panel.kind]}
           </p>
-          {panel.detail && <p className="mt-2 text-lg opacity-90">{panel.detail}</p>}
+          {panel.detail && <p className="mt-2 font-mono text-base opacity-90">{panel.detail}</p>}
         </div>
       )}
     </main>

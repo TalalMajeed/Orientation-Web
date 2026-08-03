@@ -13,8 +13,9 @@ import {
  *
  * Route segment config is not allowed here, so the path filter lives inline.
  */
+// /socials self-gates (renders its own login), and /scan just redirects to it,
+// so neither is listed here — proxy only guards the pages that bounce to /login.
 const GUARDED: { prefix: string; roles: StaffRole[] }[] = [
-  { prefix: "/scan", roles: ["scanner", "admin"] },
   { prefix: "/event-tickets", roles: ["admin"] },
   { prefix: "/hr", roles: ["admin"] },
 ];

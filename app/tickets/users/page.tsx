@@ -7,33 +7,43 @@ const users = [
 ];
 
 const roleStyles: Record<string, string> = {
-  Student: "bg-neutral-100 text-neutral-700",
-  Advisor: "bg-blue-100 text-blue-700",
-  Admin: "bg-purple-100 text-purple-700",
+  Student: "border border-fg/20 bg-fg/[0.04] text-fg/60",
+  Advisor: "border border-sky/40 bg-sky/15 text-fg",
+  Admin: "border border-ember/40 bg-ember/10 text-ember",
 };
 
 export default function UsersPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
-      <p className="mt-2 text-sm text-neutral-500">{users.length} registered users</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg/50">Support Desk</p>
+      <h1 className="mt-3 font-serif text-4xl font-bold text-fg sm:text-5xl">Users</h1>
+      <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-fg/50">
+        {users.length} registered users
+      </p>
 
-      <div className="mt-8 overflow-hidden rounded-lg border border-neutral-200">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-neutral-50 text-neutral-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Role</th>
+      <div className="mt-8 overflow-x-auto rounded-2xl border border-fg/12">
+        <table className="w-full min-w-[560px] border-collapse text-left font-mono text-[12px]">
+          <thead>
+            <tr className="border-b border-fg/15 text-fg/45">
+              {["Name", "Email", "Role"].map((h) => (
+                <th key={h} className="px-4 py-3 text-[10px] uppercase tracking-[0.12em]">
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-200">
+          <tbody>
             {users.map((u) => (
-              <tr key={u.email} className="hover:bg-neutral-50">
-                <td className="px-4 py-3 font-medium">{u.name}</td>
-                <td className="px-4 py-3 text-neutral-500">{u.email}</td>
+              <tr
+                key={u.email}
+                className="border-b border-fg/8 text-fg/80 transition-colors hover:bg-fg/[0.03]"
+              >
+                <td className="px-4 py-3 font-sans font-medium text-fg">{u.name}</td>
+                <td className="px-4 py-3 text-fg/60">{u.email}</td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${roleStyles[u.role]}`}>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] ${roleStyles[u.role]}`}
+                  >
                     {u.role}
                   </span>
                 </td>

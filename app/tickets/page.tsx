@@ -11,9 +11,12 @@ const links = [
 
 export default function TicketsHomePage() {
   return (
-    <main className="mx-auto max-w-4xl px-6 py-16">
-      <h1 className="text-3xl font-semibold tracking-tight">Ticket System</h1>
-      <p className="mt-4 text-neutral-600">
+    <main className="mx-auto max-w-5xl px-6 py-16">
+      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg/50">
+        Orientation &apos;26 · Support Desk
+      </p>
+      <h1 className="mt-3 font-serif text-4xl font-bold text-fg sm:text-5xl">Ticket System</h1>
+      <p className="mt-4 max-w-xl text-fg/60">
         Submit and track support requests during orientation week.
       </p>
 
@@ -22,10 +25,12 @@ export default function TicketsHomePage() {
           <Link
             key={link.href}
             href={link.href}
-            className="rounded-lg border border-neutral-200 p-5 transition hover:border-neutral-400 hover:bg-neutral-50"
+            className="rounded-2xl border border-fg/12 p-6 transition-colors hover:border-fg/40 hover:bg-fg/[0.03]"
           >
-            <div className="font-medium">{link.label}</div>
-            <div className="mt-1 text-sm text-neutral-500">{link.desc}</div>
+            <div className="font-serif text-2xl font-bold text-fg">{link.label}</div>
+            <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.1em] text-fg/50">
+              {link.desc}
+            </div>
           </Link>
         ))}
       </div>

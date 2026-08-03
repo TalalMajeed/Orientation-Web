@@ -1,25 +1,10 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-const DEFAULT_LANDING: Record<string, string> = {
-  admin: "/event-tickets",
-  scanner: "/socials",
-};
-
-/** Only same-origin relative paths, so ?next= cannot bounce staff off-site. */
-function safeNext(candidate: string | null): string | null {
-  if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//")) {
-    return null;
-  }
-
-  return candidate;
-}
-
-function LoginForm() {
+export default function SocialsLogin() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -40,35 +25,31 @@ function LoginForm() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(
-          typeof data.error === "string" ? data.error : "Failed to sign in"
-        );
+        setError(typeof data.error === "string" ? data.error : "Failed to sign in");
         return;
       }
 
-      const role = typeof data.role === "string" ? data.role : "admin";
-      const next = safeNext(searchParams.get("next"));
-
-      // A scanner sent to an admin page would only bounce back here.
-      const destination =
-        role === "scanner" ? DEFAULT_LANDING.scanner : next ?? DEFAULT_LANDING.admin;
-
-      router.push(destination);
+      // The server component re-reads the session cookie and swaps the login
+      // for the scanner once we refresh.
+      router.replace("/socials");
       router.refresh();
     } finally {
       setSubmitting(false);
     }
   }
 
+  const field =
+    "w-full rounded-full border-2 border-dotted border-fg/25 bg-transparent px-5 py-3 font-mono text-[13px] text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none";
+
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-surface px-6 py-16 text-fg">
       <div className="w-full max-w-sm">
         <p className="font-italic text-sm italic text-fg/50">— NUST Orientation &apos;26</p>
         <h1 className="mt-2 font-serif text-5xl font-bold leading-none text-fg sm:text-6xl">
-          Staff
+          Socials
         </h1>
         <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-fg/50">
-          Sign in to the ticketing desk
+          Gate check-in — team sign in
         </p>
 
         <form className="mt-8 space-y-3" onSubmit={handleSubmit}>
@@ -80,7 +61,7 @@ function LoginForm() {
               onChange={(event) => setUsername(event.target.value)}
               autoComplete="username"
               required
-              className="mt-2 w-full rounded-full border-2 border-dotted border-fg/25 bg-transparent px-5 py-3 font-mono text-[13px] normal-case tracking-normal text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none"
+              className={`mt-2 normal-case tracking-normal ${field}`}
             />
           </label>
           <label className="block font-mono text-[11px] uppercase tracking-[0.14em] text-fg/60">
@@ -91,7 +72,7 @@ function LoginForm() {
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="current-password"
               required
-              className="mt-2 w-full rounded-full border-2 border-dotted border-fg/25 bg-transparent px-5 py-3 font-mono text-[13px] normal-case tracking-normal text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none"
+              className={`mt-2 normal-case tracking-normal ${field}`}
             />
           </label>
 
@@ -116,13 +97,5 @@ function LoginForm() {
         </a>
       </div>
     </main>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
   );
 }
