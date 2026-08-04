@@ -45,7 +45,7 @@ function ParallaxRig({ children }: { children: React.ReactNode }) {
   return <group ref={group}>{children}</group>;
 }
 
-export default function Scene() {
+export default function Scene({ onReady }: { onReady?: () => void }) {
   return (
     <Canvas
       gl={{ alpha: true, antialias: true, powerPreference: "default", failIfMajorPerformanceCaveat: false }}
@@ -58,6 +58,7 @@ export default function Scene() {
           (e) => e.preventDefault(),
           false
         );
+        onReady?.();
       }}
     >
       <Suspense fallback={null}>

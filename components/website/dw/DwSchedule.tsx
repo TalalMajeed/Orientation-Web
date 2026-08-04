@@ -46,7 +46,7 @@ export default function DwSchedule() {
   const day = days.find((d) => d.id === active)!;
 
   const pill = (on: boolean) =>
-    `rounded-full border-2 border-dotted px-5 py-1.5 font-italic italic text-sm transition-colors ${
+    `cursor-pointer rounded-full border-2 border-dotted px-5 py-1.5 font-italic italic text-sm transition-colors ${
       on ? "border-transparent bg-fg text-surface" : "border-fg/50 text-fg hover:border-fg"
     }`;
 

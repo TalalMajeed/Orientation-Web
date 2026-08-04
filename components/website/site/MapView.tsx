@@ -14,7 +14,7 @@ function RecenterControl() {
     <button
       type="button"
       onClick={() => map.setView(CENTER, ZOOM)}
-      className="absolute bottom-3 right-3 z-[1000] rounded-full border-2 border-dotted border-fg/40 bg-surface/90 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-fg backdrop-blur transition-colors hover:border-fg"
+      className="absolute bottom-3 right-3 z-[1000] cursor-pointer rounded-full border-2 border-dotted border-fg/40 bg-surface/90 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-fg backdrop-blur transition-colors hover:border-fg"
     >
       Recenter
     </button>

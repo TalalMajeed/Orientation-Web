@@ -53,14 +53,14 @@ export default function CookieConsent() {
         <button
           type="button"
           onClick={() => respond("accepted")}
-          className="rounded-full border-2 border-dotted border-transparent bg-ember px-6 py-2.5 font-italic text-sm italic text-cream transition hover:brightness-110"
+          className="cursor-pointer rounded-full border-2 border-dotted border-transparent bg-ember px-6 py-2.5 font-italic text-sm italic text-cream transition hover:brightness-110"
         >
           Accept
         </button>
         <button
           type="button"
           onClick={() => respond("declined")}
-          className="rounded-full border-2 border-dotted border-inverse-fg/30 px-6 py-2.5 font-italic text-sm italic text-inverse-fg transition hover:border-inverse-fg"
+          className="cursor-pointer rounded-full border-2 border-dotted border-inverse-fg/30 px-6 py-2.5 font-italic text-sm italic text-inverse-fg transition hover:border-inverse-fg"
         >
           Decline
         </button>

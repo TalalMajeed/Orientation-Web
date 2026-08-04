@@ -35,7 +35,7 @@ export default function DwMap() {
             <button
               key={c.id}
               onClick={() => setActive(c.id)}
-              className={`flex items-center gap-2 rounded-full border-2 border-dotted px-4 py-1.5 font-italic italic text-sm transition-colors ${
+              className={`flex cursor-pointer items-center gap-2 rounded-full border-2 border-dotted px-4 py-1.5 font-italic italic text-sm transition-colors ${
                 active === c.id ? "border-transparent bg-fg text-surface" : "border-fg/40 text-fg hover:border-fg"
               }`}
             >

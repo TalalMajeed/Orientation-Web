@@ -12,6 +12,7 @@ function heroVideo() {
 export default function EntryExperience() {
   const [entered, setEntered] = useState(false);
   const [gone, setGone] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   // Lock page scroll while the gate is up.
   useEffect(() => {
@@ -20,6 +21,12 @@ export default function EntryExperience() {
       document.body.style.overflow = "";
     };
   }, [entered]);
+
+  // Fade the clouds and the text/button in together, once the WebGL scene
+  // has actually loaded and created its context (not just mounted the
+  // wrapper div) — otherwise the dynamic-imported clouds pop in after the
+  // opacity transition has already finished.
+  const onSceneReady = () => setVisible(true);
 
   const enter = () => {
     // Start the hero video's sound (allowed because this is a user gesture).
@@ -49,8 +56,12 @@ export default function EntryExperience() {
           }}
         >
           {/* WebGL stars + clouds (original scene + AdaptiveDpr for mobile) */}
-          <div className="pointer-events-none absolute inset-0">
-            <Scene />
+          <div
+            className={`pointer-events-none absolute inset-0 transition-opacity duration-[1400ms] ease-out ${
+              visible ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <Scene onReady={onSceneReady} />
           </div>
 
           {/* Very light gate-only grain (the gate sits above the stronger site-wide grain) */}
@@ -72,7 +83,11 @@ export default function EntryExperience() {
             }}
           />
 
-          <div className="relative z-10 flex flex-col items-center">
+          <div
+            className={`relative z-10 flex flex-col items-center transition-opacity duration-[1400ms] ease-out ${
+              visible ? "opacity-100" : "opacity-0"
+            }`}
+          >
             <p dir="rtl" lang="ur" className="font-urdu text-6xl text-cream sm:text-8xl md:text-9xl">
               اب کہانی تمہاری ہے
             </p>
@@ -85,7 +100,7 @@ export default function EntryExperience() {
               onClick={enter}
               dir="rtl"
               lang="ur"
-              className="mt-10 touch-manipulation rounded-full border border-cream/50 px-10 py-3 font-urdu text-2xl leading-tight text-cream transition-colors hover:border-cream hover:bg-cream/10 active:bg-cream/20 sm:text-3xl"
+              className="mt-10 touch-manipulation cursor-pointer rounded-full border border-cream/50 px-10 py-3 font-urdu text-2xl leading-tight text-cream transition-colors hover:border-cream hover:bg-cream/10 active:bg-cream/20 sm:text-3xl"
             >
               چلو شروع کریں
             </button>

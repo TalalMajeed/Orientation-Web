@@ -107,8 +107,8 @@ export default function DwContact() {
   };
 
   return (
-    <section id="contact" className="bg-surface px-1.5 pb-1.5">
-      <div className="overflow-hidden rounded-[30px] bg-inverse-surface px-6 py-24 text-inverse-fg sm:px-12">
+    <section id="contact" className="bg-surface">
+      <div className="overflow-hidden bg-inverse-surface px-6 py-24 text-inverse-fg sm:px-12">
         <div className="mx-auto max-w-[1600px]">
           {/* Newsletter */}
           <p className="font-italic text-sm italic text-inverse-fg/50">— Stay in the loop</p>
@@ -130,7 +130,7 @@ export default function DwContact() {
                 <button
                   type="submit"
                   disabled={status === "loading"}
-                  className="rounded-full border-2 border-dotted border-transparent bg-ember px-8 py-4 font-italic text-sm italic text-cream transition hover:brightness-110 disabled:opacity-50"
+                  className="cursor-pointer rounded-full border-2 border-dotted border-transparent bg-ember px-8 py-4 font-italic text-sm italic text-cream transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {status === "loading" ? "…" : "Subscribe"}
                 </button>
