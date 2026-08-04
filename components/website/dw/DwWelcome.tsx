@@ -14,28 +14,39 @@ const orientationHighlights = [
 
 function PictureFrame({
   caption,
+  src,
   className = "",
 }: {
   caption: string;
+  src?: string;
   className?: string;
 }) {
   return (
     <div className={`flex flex-col gap-3 ${className}`}>
-      <div className="relative aspect-[4/5] w-full overflow-hidden border-2 border-black bg-fg/[0.04]">
-        <div
-          className="absolute inset-0 opacity-[0.08]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(45deg, currentColor 0, currentColor 1px, transparent 1px, transparent 14px)",
-            color: "var(--color-fg)",
-          }}
-        />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <AnimatedLogo className="h-16 w-auto opacity-30 sm:h-20" />
+      <div className="border-2 border-black p-3">
+        <div className="relative aspect-[4/5] w-full overflow-hidden border-2 border-black bg-fg/[0.04]">
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={src} alt={caption} className="absolute inset-0 h-full w-full object-cover" />
+          ) : (
+            <>
+              <div
+                className="absolute inset-0 opacity-[0.08]"
+                style={{
+                  backgroundImage:
+                    "repeating-linear-gradient(45deg, currentColor 0, currentColor 1px, transparent 1px, transparent 14px)",
+                  color: "var(--color-fg)",
+                }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <AnimatedLogo className="h-16 w-auto opacity-30 sm:h-20" />
+              </div>
+              <span className="absolute left-3 top-3 border border-black bg-surface px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-fg">
+                Photo
+              </span>
+            </>
+          )}
         </div>
-        <span className="absolute left-3 top-3 border border-black bg-surface px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-fg">
-          Photo
-        </span>
       </div>
       <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg/50">{caption}</p>
     </div>
@@ -48,8 +59,7 @@ export default function DwWelcome() {
       <div className="mx-auto max-w-[1600px]">
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-7">
-            <p className="font-italic text-sm italic text-fg/50">— Welcome</p>
-            <h2 className="mt-4 font-serif font-bold text-[16vw] leading-[0.85] text-fg lg:text-[11vw]">
+            <h2 className="font-serif font-bold text-[16vw] leading-[0.85] text-fg lg:text-[11vw]">
               Welcome to NUST
             </h2>
             <p dir="rtl" lang="ur" className="mt-2 font-urdu text-3xl text-ember sm:text-5xl">
@@ -74,7 +84,7 @@ export default function DwWelcome() {
             </div>
           </div>
 
-          <PictureFrame caption="Fig. 01 — H-12, Islamabad" className="lg:col-span-5" />
+          <PictureFrame src="/frame1.png" caption="Fig. 01 — H-12, Islamabad" className="lg:col-span-5" />
         </div>
 
         {/* A real divider — not just whitespace — between the two blocks. */}
@@ -85,17 +95,19 @@ export default function DwWelcome() {
         </div>
 
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-16">
-          <PictureFrame caption="Fig. 02 — Orientation Week" className="lg:order-1 lg:col-span-5" />
+          <PictureFrame
+            caption="Fig. 02 — Orientation Week"
+            src="/frame2.png"
+            className="lg:order-1 lg:col-span-5"
+          />
 
           <div className="lg:order-2 lg:col-span-7 lg:text-right">
             <div className="flex flex-wrap items-start justify-between gap-6 lg:flex-row-reverse">
               <div>
-                <p className="font-italic text-sm italic text-fg/50">— Orientation</p>
-                <h2 className="mt-4 font-serif font-bold text-[16vw] leading-[0.85] text-fg lg:text-[11vw]">
+                <h2 className="font-serif font-bold text-[16vw] leading-[0.85] text-fg lg:text-[11vw]">
                   Orientation
                 </h2>
               </div>
-              <AnimatedLogo className="h-16 w-auto shrink-0 sm:h-24" />
             </div>
             <p dir="rtl" lang="ur" className="mt-2 font-urdu text-3xl text-ember sm:text-5xl">
               اب کہانی تمہاری ہے
