@@ -1,8 +1,13 @@
 import WebsiteChrome from "@/components/website/site/WebsiteChrome";
 import PageNav from "@/components/website/dw/PageNav";
 import DwContact from "@/components/website/dw/DwContact";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = { title: "Terms of Service — NUST Orientation '26" };
+export const metadata = pageMetadata({
+  title: "Terms of Service — NUST Orientation '26",
+  description: "Terms of Service for the NUST Orientation Week website and ticketing platform.",
+  path: "/terms",
+});
 
 const sections: { title: string; body: string[] }[] = [
   {

@@ -21,6 +21,7 @@ const columns: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Plan", href: "/plan" },
       { label: "Contact", href: "/contact" },
       { label: "Team", href: "/about" },
+      { label: "Societies", href: "/societies" },
     ],
   },
 ];

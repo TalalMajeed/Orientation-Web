@@ -34,10 +34,64 @@ const plexMono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
 });
 
+const siteUrl = "https://orientation.nust.edu.pk";
+const title = "NUST Orientation 2026 — Ab Kahani Tumhari Hai";
+const description =
+  "Official NUST Orientation Week hub for incoming students — event schedule, campus map, tickets, scavenger hunt and everything you need to start your story at NUST H-12.";
+
 export const metadata: Metadata = {
-  title: "NUST Orientation — Ab Kahani Tumhari Hai",
-  description:
-    "Orientation Week hub for incoming NUST students — schedule, campus map, tickets and everything you need to start your story.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: title,
+    template: "%s | NUST Orientation",
+  },
+  description,
+  keywords: [
+    "NUST Orientation",
+    "NUST Orientation 2026",
+    "NUST H-12",
+    "NUST freshers",
+    "NUST orientation week",
+    "NUST tickets",
+    "NUST campus map",
+    "National University of Sciences and Technology orientation",
+  ],
+  authors: [{ name: "NUST Orientation" }],
+  applicationName: "NUST Orientation",
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+    },
+  },
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    siteName: "NUST Orientation",
+    title,
+    description,
+    locale: "en_PK",
+    images: [
+      {
+        url: "/logo-v2.png",
+        width: 491,
+        height: 508,
+        alt: "NUST Orientation",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/logo-v2.png"],
+  },
   icons: {
     icon: "/logo.png",
     shortcut: "/logo.png",

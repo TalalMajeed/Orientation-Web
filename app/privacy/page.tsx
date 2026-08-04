@@ -1,8 +1,13 @@
 import WebsiteChrome from "@/components/website/site/WebsiteChrome";
 import PageNav from "@/components/website/dw/PageNav";
 import DwContact from "@/components/website/dw/DwContact";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = { title: "Privacy Policy — NUST Orientation '26" };
+export const metadata = pageMetadata({
+  title: "Privacy Policy — NUST Orientation '26",
+  description: "Privacy Policy for the NUST Orientation Week website and ticketing platform.",
+  path: "/privacy",
+});
 
 const sections: { title: string; body: string[] }[] = [
   {
