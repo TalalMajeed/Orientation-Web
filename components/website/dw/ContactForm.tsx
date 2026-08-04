@@ -23,7 +23,7 @@ export default function ContactForm() {
   }
 
   const field =
-    "w-full rounded-full border-2 border-dotted border-fg/25 bg-transparent px-5 py-3 font-mono text-[13px] normal-case tracking-normal text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none";
+    "w-full rounded-2xl border-2 border-dotted border-fg/25 bg-transparent px-5 py-3 font-mono text-[13px] normal-case tracking-normal text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none";
 
   return (
     <form onSubmit={handleSubmit} className="mt-10 max-w-xl space-y-3">
@@ -47,11 +47,11 @@ export default function ContactForm() {
       />
       <textarea
         required
-        rows={4}
+        rows={2}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="What's up?"
-        className="w-full rounded-2xl border-2 border-dotted border-fg/25 bg-transparent px-5 py-3 font-mono text-[13px] normal-case tracking-normal text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none"
+        className="w-full resize-none rounded-2xl border-2 border-dotted border-fg/25 bg-transparent px-5 py-3 font-mono text-[13px] normal-case tracking-normal text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none"
       />
       <button
         type="submit"

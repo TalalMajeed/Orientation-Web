@@ -1,23 +1,80 @@
 import AnimatedLogo from "./AnimatedLogo";
 
+const welcomeStats = [
+  { value: "11", label: "Schools" },
+  { value: "700", label: "Acre Campus" },
+  { value: "H-12", label: "Islamabad" },
+];
+
+const orientationHighlights = [
+  { value: "01", label: "Meet your OG family" },
+  { value: "02", label: "Tour the full campus" },
+  { value: "03", label: "Make it yours" },
+];
+
+function PictureFrame({
+  caption,
+  className = "",
+}: {
+  caption: string;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col gap-3 ${className}`}>
+      <div className="relative aspect-[4/5] w-full overflow-hidden border-2 border-black bg-fg/[0.04]">
+        <div
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(45deg, currentColor 0, currentColor 1px, transparent 1px, transparent 14px)",
+            color: "var(--color-fg)",
+          }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <AnimatedLogo className="h-16 w-auto opacity-30 sm:h-20" />
+        </div>
+        <span className="absolute left-3 top-3 border border-black bg-surface px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-fg">
+          Photo
+        </span>
+      </div>
+      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg/50">{caption}</p>
+    </div>
+  );
+}
+
 export default function DwWelcome() {
   return (
     <section className="bg-surface px-6 py-28 sm:px-10">
       <div className="mx-auto max-w-[1600px]">
-        <div>
-          <p className="font-italic text-sm italic text-fg/50">— Welcome</p>
-          <h2 className="mt-4 font-serif font-bold text-[16vw] leading-[0.85] text-fg lg:text-[11vw]">
-            Welcome to NUST
-          </h2>
-          <p dir="rtl" lang="ur" className="mt-2 font-urdu text-3xl text-ember sm:text-5xl">
-            نسٹ میں خوش آمدید
-          </p>
-          <p className="mt-12 max-w-3xl font-serif text-3xl leading-[1.15] text-fg sm:text-4xl">
-            Pakistan&apos;s top-ranked university, home to eleven schools and
-            a 700-acre campus in H-12, Islamabad — and for the next few days,
-            the whole reason you&apos;re here. In a few weeks, this becomes
-            more than an address on your acceptance letter. It becomes home.
-          </p>
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-16">
+          <div className="lg:col-span-7">
+            <p className="font-italic text-sm italic text-fg/50">— Welcome</p>
+            <h2 className="mt-4 font-serif font-bold text-[16vw] leading-[0.85] text-fg lg:text-[11vw]">
+              Welcome to NUST
+            </h2>
+            <p dir="rtl" lang="ur" className="mt-2 font-urdu text-3xl text-ember sm:text-5xl">
+              نسٹ میں خوش آمدید
+            </p>
+            <p className="mt-12 max-w-3xl font-serif text-3xl leading-[1.15] text-fg sm:text-4xl">
+              Pakistan&apos;s top-ranked university, home to eleven schools and
+              a 700-acre campus in H-12, Islamabad — and for the next few days,
+              the whole reason you&apos;re here. In a few weeks, this becomes
+              more than an address on your acceptance letter. It becomes home.
+            </p>
+
+            <div className="mt-10 flex flex-wrap gap-x-10 gap-y-6 border-t border-dashed border-fg/20 pt-8">
+              {welcomeStats.map((s) => (
+                <div key={s.label}>
+                  <p className="font-serif text-4xl text-fg">{s.value}</p>
+                  <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-fg/50">
+                    {s.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <PictureFrame caption="Fig. 01 — H-12, Islamabad" className="lg:col-span-5" />
         </div>
 
         {/* A real divider — not just whitespace — between the two blocks. */}
@@ -27,26 +84,39 @@ export default function DwWelcome() {
           <span className="h-px flex-1 border-t border-dashed border-fg/20" />
         </div>
 
-        <div>
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div>
-              <p className="font-italic text-sm italic text-fg/50">— Orientation</p>
-              <h2 className="mt-4 font-serif font-bold text-[16vw] leading-[0.85] text-fg lg:text-[11vw]">
-                Orientation
-              </h2>
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-16">
+          <PictureFrame caption="Fig. 02 — Orientation Week" className="lg:order-1 lg:col-span-5" />
+
+          <div className="lg:order-2 lg:col-span-7 lg:text-right">
+            <div className="flex flex-wrap items-start justify-between gap-6 lg:flex-row-reverse">
+              <div>
+                <p className="font-italic text-sm italic text-fg/50">— Orientation</p>
+                <h2 className="mt-4 font-serif font-bold text-[16vw] leading-[0.85] text-fg lg:text-[11vw]">
+                  Orientation
+                </h2>
+              </div>
+              <AnimatedLogo className="h-16 w-auto shrink-0 sm:h-24" />
             </div>
-            <AnimatedLogo className="h-16 w-auto shrink-0 sm:h-24" />
+            <p dir="rtl" lang="ur" className="mt-2 font-urdu text-3xl text-ember sm:text-5xl">
+              اب کہانی تمہاری ہے
+            </p>
+            <p className="mt-12 max-w-3xl font-serif text-3xl leading-[1.15] text-fg sm:text-4xl lg:ml-auto">
+              We don&apos;t just run a week of events. We identify a threshold
+              — the moment you step from one life into another — and fill it
+              with people, places, and stories. Every senior running it once
+              stood exactly where you stand now; the pen is in your hand, the
+              story is yours to write.
+            </p>
+
+            <div className="mt-10 flex flex-wrap justify-start gap-x-10 gap-y-6 border-t border-dashed border-fg/20 pt-8 lg:justify-end">
+              {orientationHighlights.map((s) => (
+                <div key={s.label} className="lg:text-right">
+                  <p className="font-mono text-xs tracking-[0.14em] text-ember">{s.value}</p>
+                  <p className="mt-1 max-w-[10rem] font-serif text-lg text-fg">{s.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <p dir="rtl" lang="ur" className="mt-2 font-urdu text-3xl text-ember sm:text-5xl">
-            اب کہانی تمہاری ہے
-          </p>
-          <p className="mt-12 max-w-3xl font-serif text-3xl leading-[1.15] text-fg sm:text-4xl">
-            We don&apos;t just run a week of events. We identify a threshold
-            — the moment you step from one life into another — and fill it
-            with people, places, and stories. Every senior running it once
-            stood exactly where you stand now; the pen is in your hand, the
-            story is yours to write.
-          </p>
         </div>
       </div>
     </section>

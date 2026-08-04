@@ -79,7 +79,7 @@ export default function DwHero() {
   // A persistent frosted-glass backing keeps these legible over any frame of
   // the hero video, bright or dark — not just on hover.
   const pill =
-    "touch-manipulation cursor-pointer rounded-full border-2 border-dotted border-cream/70 bg-white/15 px-4 py-1.5 font-italic italic text-sm text-cream shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-md transition-colors hover:border-transparent hover:bg-cream hover:text-ink active:bg-cream active:text-ink";
+    "touch-manipulation cursor-pointer rounded-full border-2 border-dotted border-cream/70 bg-white/15 px-5 py-2.5 font-italic italic text-base font-bold text-cream shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-md transition-colors hover:border-transparent hover:bg-cream hover:text-ink active:bg-cream active:text-ink";
 
   return (
     <section ref={sectionRef} className="h-[100svh] w-full">

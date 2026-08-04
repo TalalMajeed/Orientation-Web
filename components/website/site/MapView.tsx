@@ -6,6 +6,12 @@ import { categoryColor, type Landmark } from "./mapData";
 
 const CENTER: [number, number] = [33.6435, 72.9915];
 const ZOOM = 15;
+const MIN_ZOOM = 15;
+// Padded around the campus landmarks so panning/zooming out never leaves NUST H-12.
+const CAMPUS_BOUNDS: [[number, number], [number, number]] = [
+  [33.634, 72.981],
+  [33.65, 73.001],
+];
 
 function RecenterControl() {
   const map = useMap();
@@ -26,6 +32,9 @@ export default function MapView({ landmarks }: { landmarks: Landmark[] }) {
     <MapContainer
       center={CENTER}
       zoom={ZOOM}
+      minZoom={MIN_ZOOM}
+      maxBounds={CAMPUS_BOUNDS}
+      maxBoundsViscosity={1.0}
       scrollWheelZoom
       style={{ height: "100%", width: "100%", background: "#f2f7ff" }}
     >
