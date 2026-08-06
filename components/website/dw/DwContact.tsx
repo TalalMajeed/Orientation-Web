@@ -11,16 +11,12 @@ const columns: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Map", href: "/map" },
       { label: "Tickets", href: "/passes" },
       { label: "Scavenger Hunt", href: "/scavenger-hunt" },
-      { label: "Gallery", href: "/gallery" },
     ],
   },
   {
     title: "Program",
     links: [
-      { label: "About", href: "/about" },
-      { label: "Plan", href: "/plan" },
       { label: "Contact", href: "/contact" },
-      { label: "Team", href: "/about" },
       { label: "Societies", href: "/societies" },
     ],
   },

@@ -5,11 +5,8 @@ const siteUrl = "https://orientation.nust.edu.pk";
 export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     "",
-    "/about",
     "/schedule",
     "/map",
-    "/plan",
-    "/gallery",
     "/contact",
     "/passes",
     "/scavenger-hunt",
