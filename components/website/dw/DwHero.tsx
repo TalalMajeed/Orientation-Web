@@ -84,14 +84,17 @@ export default function DwHero() {
   return (
     <section ref={sectionRef} className="h-[100svh] w-full">
       <div className="relative h-[100svh] w-full overflow-hidden bg-ink">
+        {/* No autoPlay — the entry gate starts this itself, from the first
+            frame, the moment it's dismissed. Otherwise it's already several
+            seconds in (playing muted, unseen) by the time the gate fades. */}
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           id="hero-video"
           src="/hero.mp4"
-          autoPlay
           muted
           loop
           playsInline
+          preload="auto"
           className="absolute inset-0 h-full w-full object-cover"
           style={{ filter: "contrast(1.02) saturate(0.95) sepia(0.04)" }}
         />

@@ -29,9 +29,12 @@ export default function EntryExperience() {
   const onSceneReady = () => setVisible(true);
 
   const enter = () => {
-    // Start the hero video's sound (allowed because this is a user gesture).
+    // The hero video has no autoplay — it starts here, from frame one, the
+    // moment the gate is dismissed (this click is also the user gesture
+    // that lets it start unmuted).
     const v = heroVideo();
     if (v) {
+      v.currentTime = 0;
       v.muted = false;
       v.play().catch(() => {});
     }
