@@ -84,7 +84,7 @@ export default function DwWelcome() {
             </div>
           </div>
 
-          <PictureFrame src="/frame1.png" caption="Fig. 01 — H-12, Islamabad" className="lg:col-span-5" />
+          <PictureFrame src="/nust_pic.png" caption="Fig. 01 — H-12, Islamabad" className="lg:col-span-5" />
         </div>
 
         {/* A real divider — not just whitespace — between the two blocks. */}
