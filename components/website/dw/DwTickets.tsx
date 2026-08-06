@@ -58,11 +58,20 @@ export default function DwTickets() {
           issue your pass once and carry the whole week in your pocket.
         </p>
 
-        <h2 className="mt-16 font-serif font-bold text-[18vw] leading-[0.8] text-fg lg:text-[14vw]">
-          Tickets
-        </h2>
+        <div className="mt-16">
+          <h2 className="font-serif font-bold text-[18vw] leading-[0.8] text-fg lg:text-[14vw]">
+            Tickets
+          </h2>
+          <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-dotted border-fg/40 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-fg/60">
+            Coming soon — pricing &amp; dates not yet finalized
+          </span>
+        </div>
 
-        {/* The two tickets */}
+        <div className="mt-12 flex items-center justify-center rounded-[30px] border border-dashed border-fg/40 px-6 py-24 sm:px-10">
+          <p className="font-serif text-4xl text-fg/60 sm:text-5xl">Coming Soon</p>
+        </div>
+
+        {/* The two tickets — commented out until pricing & dates are finalized.
         <div className="mt-10 flex flex-col items-center gap-8 lg:flex-row lg:items-stretch lg:justify-center">
           <Ticket {...concert} />
           <Ticket {...qawwali} />
@@ -82,6 +91,7 @@ export default function DwTickets() {
             every session, stall, and stage across the week.
           </p>
         </div>
+        */}
       </div>
     </section>
   );
