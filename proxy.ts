@@ -40,26 +40,9 @@ const LANDING: Record<StaffRole, string> = {
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // The new mark previews on localhost only; the deployed site keeps the
-  // current logo until launch. The v2 asset itself stays unreachable outside
-  // localhost, even by guessing its direct URL.
-  const isLocalhost = request.nextUrl.hostname.includes("localhost");
-
-  if (pathname === "/logo-v2.png") {
-    return isLocalhost
-      ? NextResponse.next()
-      : new NextResponse(null, { status: 404 });
-  }
-
-  if (pathname === "/logo.png" && isLocalhost) {
-    return NextResponse.rewrite(new URL("/logo-v2.png", request.url));
-  }
-
-  // No dedicated favicon asset — it's just whichever logo is active.
+  // No dedicated favicon asset — it's just the logo.
   if (pathname === "/favicon.ico") {
-    return NextResponse.rewrite(
-      new URL(isLocalhost ? "/logo-v2.png" : "/logo.png", request.url)
-    );
+    return NextResponse.rewrite(new URL("/logo.png", request.url));
   }
 
   if (
