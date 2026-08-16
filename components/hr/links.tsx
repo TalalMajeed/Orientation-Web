@@ -164,7 +164,12 @@ export default function LinkManager() {
       </form>
 
       {error && (
-        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.1em] text-ember">{error}</p>
+        <p
+          role="alert"
+          className="mt-3 font-mono text-[11px] uppercase tracking-[0.1em] text-danger"
+        >
+          {error}
+        </p>
       )}
 
       <div className="mt-8 overflow-x-auto rounded-2xl border border-fg/12">
@@ -265,7 +270,7 @@ export default function LinkManager() {
                       <button
                         type="button"
                         onClick={() => handleDelete(link.shortId)}
-                        className={`${ACTION} text-ember`}
+                        className={`${ACTION} text-danger`}
                       >
                         Delete
                       </button>

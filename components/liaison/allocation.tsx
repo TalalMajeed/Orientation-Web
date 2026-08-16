@@ -255,8 +255,8 @@ export default function AllocationView() {
       </div>
 
       {allocated && unassigned.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-dashed border-ember/50 bg-ember/[0.06] p-4">
-          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ember">
+        <div className="mt-4 rounded-2xl border border-dashed border-danger/50 bg-danger/[0.06] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-danger">
             {unassigned.length} unassigned — raise or clear the house cap and re-divide.
           </p>
         </div>

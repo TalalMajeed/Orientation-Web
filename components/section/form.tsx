@@ -92,7 +92,7 @@ export default function ContactForm() {
         <p
           aria-live="polite"
           className={`font-italic text-sm italic ${
-            status === "ok" ? "text-fg/70" : "text-ember"
+            status === "ok" ? "text-fg/70" : "text-danger"
           }`}
         >
           {feedback}

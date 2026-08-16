@@ -110,7 +110,12 @@ function LoginForm() {
           </label>
 
           {error && (
-            <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-ember">{error}</p>
+            <p
+              role="alert"
+              className="font-mono text-[11px] uppercase tracking-[0.1em] text-danger"
+            >
+              {error}
+            </p>
           )}
 
           <button

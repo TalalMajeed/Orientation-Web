@@ -142,8 +142,9 @@ export default function Footer() {
               </div>
               {message && (
                 <p
+                  role={status === "ok" ? undefined : "alert"}
                   className={`mt-3 font-italic text-sm italic ${
-                    status === "ok" ? "text-sky" : "text-ember"
+                    status === "ok" ? "text-sky" : "text-danger-inverse"
                   }`}
                 >
                   {message}

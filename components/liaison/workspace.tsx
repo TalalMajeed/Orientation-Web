@@ -24,7 +24,7 @@ export default function Workspace({ tab }: { tab: TabId }) {
       {error && (
         <p
           role="alert"
-          className="mb-6 rounded-2xl border border-ember/40 bg-ember/5 px-5 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-ember"
+          className="mb-6 rounded-2xl border border-danger/40 bg-danger/5 px-5 py-3 font-mono text-[11px] uppercase tracking-[0.12em] text-danger"
         >
           {error}
         </p>

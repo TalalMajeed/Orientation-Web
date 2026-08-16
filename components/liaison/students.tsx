@@ -140,7 +140,7 @@ export default function StudentsView() {
         <div className="mt-6 rounded-2xl border border-dashed border-fg/25 p-4">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 font-mono text-[11px] uppercase tracking-[0.1em]">
             <span className="text-fg">{students.length} valid</span>
-            <span className="text-ember">{duplicates} duplicates removed</span>
+            <span className="text-danger">{duplicates} duplicates removed</span>
             <span className="text-fg/70">{incomplete} incomplete flagged</span>
             {log.length > 0 && (
               <button
