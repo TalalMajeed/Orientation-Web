@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { categories, landmarks } from "@/components/campus/landmarks";
+import { CategoryIcon } from "@/components/campus/icons";
 
 const MapView = dynamic(() => import("@/components/campus/view"), {
   ssr: false,
@@ -39,7 +40,7 @@ export default function CampusExplorer({
                 : "border-fg/40 text-fg hover:border-fg"
             }`}
           >
-            <span className="h-2 w-2 rounded-full" style={{ background: category.color }} />
+            <CategoryIcon category={category.id} style={{ color: category.color }} />
             {category.name}
           </button>
         ))}
