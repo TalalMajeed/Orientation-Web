@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { readJson, readString } from "@/lib/request";
 import { requireRole } from "@/services/auth/guard";
 import {
   InvalidUrlError,
@@ -18,26 +19,20 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
 
   const { shortId } = await params;
+  const body = await readJson(request);
 
-  let body: unknown;
-
-  try {
-    body = await request.json();
-  } catch {
+  if (!body) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const url =
-    typeof body === "object" && body !== null && "url" in body
-      ? (body as { url: unknown }).url
-      : undefined;
+  const url = readString(body, "url");
 
-  if (typeof url !== "string" || url.trim().length === 0) {
+  if (!url) {
     return NextResponse.json({ error: "A URL is required" }, { status: 400 });
   }
 
   try {
-    const link = await updateShortLink(shortId, url.trim());
+    const link = await updateShortLink(shortId, url);
 
     return NextResponse.json({ link }, { status: 200 });
   } catch (error) {

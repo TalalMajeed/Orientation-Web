@@ -2,16 +2,11 @@ import { NextRequest } from "next/server";
 
 import { requireRole } from "@/services/auth/guard";
 import { updateHouse, updateOg } from "@/services/liaison/db";
+import { stateResponse, validationError } from "@/services/liaison/respond";
 import { parseText, readJsonBody } from "@/services/liaison/validate";
-import { stateResponse, validationError } from "../../_respond";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-/**
- * Renames the house's OL, or one of its OGs. Both are a name edit on the same
- * house, so they share the route: `{ ol }` retitles the house lead, and
- * `{ ogId, name }` retitles one group lead.
- */
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const denied = requireRole(request, "liaison", "admin");
 

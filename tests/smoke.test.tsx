@@ -29,15 +29,10 @@ describe("smoke test", () => {
   });
 
   it("initializes the MongoDB connection helper", async () => {
-    const { getMongoClient, getMongoDb, mongoClientPromise } = await import(
-      "../lib/mongodb"
-    );
+    const { getMongoClient, getMongoDb, mongoClientPromise } = await import("@/lib/mongo");
 
     await expect(getMongoClient()).resolves.toBeDefined();
-    await expect(getMongoDb("orientation-web")).resolves.toEqual({
-      name: "mock-db",
-    });
-
+    await expect(getMongoDb("orientation-web")).resolves.toEqual({ name: "mock-db" });
     await expect(mongoClientPromise).resolves.toBeDefined();
   });
 });

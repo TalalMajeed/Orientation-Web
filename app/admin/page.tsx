@@ -2,7 +2,7 @@ import Link from "next/link";
 
 type Portal = {
   name: string;
-  desc: string;
+  description: string;
   href: string;
   color: string;
   hint: string;
@@ -11,21 +11,21 @@ type Portal = {
 const PORTALS: Portal[] = [
   {
     name: "Liaison",
-    desc: "OG houses, teams & batch allocation",
+    description: "OG houses, teams & batch allocation",
     href: "/login?next=/liaison",
     color: "#D85503",
     hint: "Liaison credentials",
   },
   {
     name: "HR",
-    desc: "Create & manage short invite links",
+    description: "Create & manage short invite links",
     href: "/login?next=/hr",
     color: "#B8860B",
     hint: "Admin credentials",
   },
 ];
 
-export default function AdminHub() {
+export default function AdminPage() {
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-surface px-6 py-16 text-fg">
       <div className="w-full max-w-3xl">
@@ -38,46 +38,40 @@ export default function AdminHub() {
         </p>
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2">
-          {PORTALS.map((p) => (
+          {PORTALS.map((portal) => (
             <Link
-              key={p.name}
-              href={p.href}
+              key={portal.name}
+              href={portal.href}
               className="group flex items-start gap-3 rounded-2xl border border-fg/12 p-5 transition-colors hover:border-fg/40 hover:bg-fg/[0.03]"
             >
               <span
                 className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ background: p.color }}
+                style={{ background: portal.color }}
               />
               <span className="min-w-0">
                 <span className="flex items-baseline gap-2">
-                  <span className="font-serif text-2xl font-bold text-fg">{p.name}</span>
+                  <span className="font-serif text-2xl font-bold text-fg">{portal.name}</span>
                   <span className="font-mono text-[14px] text-fg/30 transition-transform group-hover:translate-x-0.5">
                     →
                   </span>
                 </span>
                 <span className="mt-1 block font-mono text-[10px] uppercase leading-relaxed tracking-[0.08em] text-fg/50">
-                  {p.desc}
+                  {portal.description}
                 </span>
                 <span className="mt-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-fg/35">
-                  {p.hint}
+                  {portal.hint}
                 </span>
               </span>
             </Link>
           ))}
         </div>
 
-        <div className="mt-10 flex items-center justify-center gap-6 border-t border-dashed border-fg/15 pt-6">
+        <div className="mt-10 flex items-center justify-center border-t border-dashed border-fg/15 pt-6">
           <Link
             href="/"
             className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg/60 transition-opacity hover:opacity-60"
           >
             Website
-          </Link>
-          <Link
-            href="/tickets"
-            className="font-mono text-[11px] uppercase tracking-[0.12em] text-fg/60 transition-opacity hover:opacity-60"
-          >
-            Support Desk
           </Link>
         </div>
       </div>

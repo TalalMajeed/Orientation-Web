@@ -2,7 +2,7 @@ import "server-only";
 
 import { randomInt } from "crypto";
 
-import { getMongoDb } from "@/lib/mongodb";
+import { getMongoDb } from "@/lib/mongo";
 
 const COLLECTION_NAME = "hr_links";
 const SHORT_ID_ALPHABET =

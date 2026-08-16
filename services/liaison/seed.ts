@@ -1,6 +1,5 @@
-import type { House } from "./types";
+import type { House } from "@/services/liaison/types";
 
-// 10 OG Houses. Names + accent colours; OL and OG names are placeholders to edit.
 const HOUSES: { name: string; color: string }[] = [
   { name: "Khiljis", color: "#D85503" },
   { name: "Vikings", color: "#3D66A9" },
@@ -17,15 +16,15 @@ const HOUSES: { name: string; color: string }[] = [
 const OGS_PER_HOUSE = 9;
 
 export function seedHouses(): House[] {
-  return HOUSES.map((h, hi) => ({
-    id: `house-${hi + 1}`,
-    name: h.name,
-    color: h.color,
-    ol: `OL — ${h.name}`,
-    ogs: Array.from({ length: OGS_PER_HOUSE }, (_, gi) => ({
-      id: `house-${hi + 1}-og-${gi + 1}`,
-      name: `OG ${gi + 1}`,
-      group: gi + 1,
+  return HOUSES.map((house, houseIndex) => ({
+    id: `house-${houseIndex + 1}`,
+    name: house.name,
+    color: house.color,
+    ol: `OL — ${house.name}`,
+    ogs: Array.from({ length: OGS_PER_HOUSE }, (_, groupIndex) => ({
+      id: `house-${houseIndex + 1}-og-${groupIndex + 1}`,
+      name: `OG ${groupIndex + 1}`,
+      group: groupIndex + 1,
     })),
   }));
 }

@@ -1,6 +1,6 @@
-import WebsiteChrome from "@/components/website/site/WebsiteChrome";
-import PageNav from "@/components/website/dw/PageNav";
-import DwContact from "@/components/website/dw/DwContact";
+import SiteChrome from "@/components/site/chrome";
+import SiteNav from "@/components/site/nav";
+import Footer from "@/components/section/footer";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -10,8 +10,6 @@ export const metadata = pageMetadata({
   path: "/societies",
 });
 
-// Placeholder directory — real society profiles and stall assignments land
-// closer to Orientation Week once societies confirm participation.
 const societies = [
   { name: "Dramatics Society", category: "Arts & Culture" },
   { name: "Debating Society", category: "Arts & Culture" },
@@ -26,8 +24,8 @@ const societies = [
 export default function SocietiesPage() {
   return (
     <main className="min-h-screen bg-surface text-fg">
-      <WebsiteChrome />
-      <PageNav />
+      <SiteChrome />
+      <SiteNav />
       <section className="mx-auto max-w-[1600px] px-6 py-24 sm:px-12">
         <p className="font-italic text-sm italic text-fg/50">— Find your people</p>
         <h1 className="mt-4 font-serif text-[10vw] font-bold leading-[0.9] text-fg sm:text-[5vw]">
@@ -40,18 +38,18 @@ export default function SocietiesPage() {
         </p>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {societies.map((s) => (
+          {societies.map((society) => (
             <div
-              key={s.name}
+              key={society.name}
               className="rounded-2xl border-2 border-dotted border-fg/20 bg-fg/[0.03] p-6"
             >
-              <p className="font-italic text-xs italic text-fg/40">{s.category}</p>
-              <h2 className="mt-2 font-serif text-lg font-bold text-fg">{s.name}</h2>
+              <p className="font-italic text-xs italic text-fg/40">{society.category}</p>
+              <h2 className="mt-2 font-serif text-lg font-bold text-fg">{society.name}</h2>
             </div>
           ))}
         </div>
       </section>
-      <DwContact />
+      <Footer />
     </main>
   );
 }

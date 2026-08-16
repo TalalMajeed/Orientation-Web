@@ -1,25 +1,15 @@
 import "server-only";
 
-import { LiaisonValidationError } from "./db";
-import type { Gender, LogEntry, Student } from "./types";
+import { readJson } from "@/lib/request";
+import { LiaisonValidationError } from "@/services/liaison/db";
+import type { Gender, LogEntry, Student } from "@/services/liaison/types";
 
 const GENDERS: Gender[] = ["male", "female"];
-const LOG_TYPES: LogEntry["type"][] = [
-  "duplicate",
-  "incomplete",
-  "overflow",
-  "info",
-];
+const LOG_TYPES: LogEntry["type"][] = ["duplicate", "incomplete", "overflow", "info"];
 
 const MAX_TEXT_LENGTH = 200;
 const MAX_LOG_ENTRIES = 5000;
 
-/**
- * Everything below crosses the network from a browser, so nothing on it is
- * trusted: each field is re-typed and length-capped here rather than spread
- * into a document as-is. Unknown keys are dropped by construction — the
- * objects are rebuilt field by field, never copied.
- */
 function text(value: unknown, field: string, { allowEmpty = false } = {}): string {
   if (typeof value !== "string") {
     throw new LiaisonValidationError(`${field} must be a string`);
@@ -66,13 +56,10 @@ export function parseStudent(value: unknown, index: number): Student {
     );
   }
 
-  const merit =
-    raw.merit === null || raw.merit === undefined ? null : Number(raw.merit);
+  const merit = raw.merit === null || raw.merit === undefined ? null : Number(raw.merit);
 
   if (merit !== null && !Number.isFinite(merit)) {
-    throw new LiaisonValidationError(
-      `students[${index}].merit must be a number or null`
-    );
+    throw new LiaisonValidationError(`students[${index}].merit must be a number or null`);
   }
 
   return {
@@ -104,8 +91,6 @@ export function parseLog(value: unknown): LogEntry[] {
     throw new LiaisonValidationError("log must be an array");
   }
 
-  // The log is advisory — a long one is a sign of a messy upload, not an
-  // attack, so it is truncated rather than rejected.
   return value.slice(0, MAX_LOG_ENTRIES).map((entry, index) => {
     const raw = record(entry, `log[${index}]`);
     const type = raw.type;
@@ -136,24 +121,20 @@ export function parseHouseCapacity(value: unknown): number | null {
   const capacity = Number(value);
 
   if (!Number.isFinite(capacity) || capacity < 1) {
-    throw new LiaisonValidationError(
-      "houseCapacity must be a positive number or null"
-    );
+    throw new LiaisonValidationError("houseCapacity must be a positive number or null");
   }
 
   return Math.floor(capacity);
 }
 
 export async function readJsonBody(request: Request): Promise<Record<string, unknown>> {
-  let body: unknown;
+  const body = await readJson(request);
 
-  try {
-    body = await request.json();
-  } catch {
+  if (!body) {
     throw new LiaisonValidationError("Invalid JSON body");
   }
 
-  return record(body, "body");
+  return body;
 }
 
 export { text as parseText };

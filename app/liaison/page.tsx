@@ -3,19 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LiaisonProvider } from "@/components/liaison/store";
-import Workspace, { type TabId } from "@/components/liaison/Workspace";
+import Workspace, { type TabId } from "@/components/liaison/workspace";
 
-const TABS = [
+const TABS: { id: TabId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "houses", label: "OG Houses" },
   { id: "students", label: "Students" },
   { id: "allocation", label: "Allocation" },
-] as const;
+];
 
-// The session cookie is the gate: proxy.ts redirects anyone without a
-// liaison/admin session to /login before this renders, and every API call the
-// panel makes re-checks the role server-side.
-export default function LiaisonDashboard() {
+export default function LiaisonPage() {
   const router = useRouter();
   const [tab, setTab] = useState<TabId>("overview");
 
@@ -44,15 +41,17 @@ export default function LiaisonDashboard() {
             </button>
           </div>
           <div className="mx-auto flex max-w-[1400px] gap-2 overflow-x-auto px-6 pb-3 sm:px-10">
-            {TABS.map((t) => (
+            {TABS.map((entry) => (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
+                key={entry.id}
+                onClick={() => setTab(entry.id)}
                 className={`shrink-0 rounded-full border-2 border-dotted px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
-                  tab === t.id ? "border-transparent bg-fg text-surface" : "border-fg/40 text-fg hover:border-fg"
+                  tab === entry.id
+                    ? "border-transparent bg-fg text-surface"
+                    : "border-fg/40 text-fg hover:border-fg"
                 }`}
               >
-                {t.label}
+                {entry.label}
               </button>
             ))}
           </div>

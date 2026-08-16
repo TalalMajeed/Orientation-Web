@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { readJson, readString } from "@/lib/request";
 import { requireRole } from "@/services/auth/guard";
-import {
-  InvalidUrlError,
-  createShortLink,
-  listShortLinks,
-} from "@/services/hr/links";
+import { InvalidUrlError, createShortLink, listShortLinks } from "@/services/hr/links";
 
 export async function GET(request: NextRequest) {
   const denied = requireRole(request, "admin");
@@ -26,25 +23,20 @@ export async function POST(request: NextRequest) {
     return denied;
   }
 
-  let body: unknown;
+  const body = await readJson(request);
 
-  try {
-    body = await request.json();
-  } catch {
+  if (!body) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const url =
-    typeof body === "object" && body !== null && "url" in body
-      ? (body as { url: unknown }).url
-      : undefined;
+  const url = readString(body, "url");
 
-  if (typeof url !== "string" || url.trim().length === 0) {
+  if (!url) {
     return NextResponse.json({ error: "A URL is required" }, { status: 400 });
   }
 
   try {
-    const link = await createShortLink(url.trim());
+    const link = await createShortLink(url);
 
     return NextResponse.json({ link }, { status: 201 });
   } catch (error) {

@@ -8,17 +8,11 @@ const DEFAULT_LANDING: Record<string, string> = {
   liaison: "/liaison",
 };
 
-/**
- * Prefixes each role cannot open — the mirror of proxy.ts's GUARDED table.
- * Duplicated because this is a client component and the session module is
- * server-only; proxy.ts is still the one that enforces it.
- */
 const BLOCKED: Record<string, string[]> = {
   admin: [],
   liaison: ["/hr"],
 };
 
-/** Only same-origin relative paths, so ?next= cannot bounce staff off-site. */
 function safeNext(candidate: string | null): string | null {
   if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//")) {
     return null;
@@ -56,9 +50,7 @@ function LoginForm() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(
-          typeof data.error === "string" ? data.error : "Failed to sign in"
-        );
+        setError(typeof data.error === "string" ? data.error : "Failed to sign in");
         return;
       }
 
@@ -67,9 +59,6 @@ function LoginForm() {
       const landing = DEFAULT_LANDING[role] ?? DEFAULT_LANDING.admin;
       let destination: string;
 
-      // Sending someone to a page their role cannot open would only bounce them
-      // back here, so they land on their own page — but carry the reason, or the
-      // page they asked for silently vanishes and the link looks broken.
       if (next && canOpen(role, next)) {
         destination = next;
       } else if (next) {

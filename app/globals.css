@@ -30,94 +30,49 @@
   --color-blue: #2a5290;
   --color-blue-light: #3d66a9;
   --color-sky: #9fe4ff;
-  /* Matches --color-surface — the old warm cream is retired everywhere. */
   --color-cream: #f2f7ff;
-  /* Accent recolored to lean into the site's own blue family (was magenta,
-     orange before that) — drawn straight from --color-blue so the palette
-     reads cooler without introducing a new hue. */
   --color-ember: #2a5290;
 }
 
-/* Theme-aware semantic tokens (non-inline so they can be overridden per theme) */
 @theme {
-  /* Light, near-white blue in place of the old cream/white — used for both
-     the light surface and any "inverse" (light-on-dark) text/background. */
   --color-surface: #f2f7ff;
   --color-fg: #090c13;
   --color-inverse-surface: #0b0f18;
   --color-inverse-fg: #f2f7ff;
 }
 
+:root {
+  color-scheme: light;
+}
+
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --color-surface: #0b0f18;
   --color-fg: #f2f7ff;
   --color-inverse-surface: #f2f7ff;
   --color-inverse-fg: #0b0f18;
 }
 
-/* Make native controls (select popups, date pickers, spinners) follow the theme. */
-:root { color-scheme: light; }
-:root[data-theme="dark"] { color-scheme: dark; }
-
-/* Compact pill number inputs read cleaner without the browser spinner. */
-input.no-spinner { appearance: textfield; -moz-appearance: textfield; }
-input.no-spinner::-webkit-inner-spin-button,
-input.no-spinner::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-
 body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Pure-CSS night sky for the entry gate (no WebGL — bulletproof on all devices) */
-@keyframes twinkle {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.95; }
-}
-@keyframes cloudDrift {
-  from { transform: translateX(-4%); }
-  to { transform: translateX(4%); }
-}
-.dw-sky-stars {
-  background-image:
-    radial-gradient(2.4px 2.4px at 30px 50px, #ffffff, transparent),
-    radial-gradient(3px 3px at 130px 100px, #ffffff, transparent),
-    radial-gradient(2.4px 2.4px at 210px 40px, #ffffff, transparent),
-    radial-gradient(2px 2px at 90px 170px, rgba(255,255,255,0.9), transparent),
-    radial-gradient(3px 3px at 40px 30px, #ffffff, transparent),
-    radial-gradient(2.6px 2.6px at 175px 205px, #ffffff, transparent),
-    radial-gradient(2px 2px at 250px 150px, rgba(255,255,255,0.9), transparent),
-    radial-gradient(2.4px 2.4px at 300px 90px, #ffffff, transparent);
-  background-repeat: repeat;
-  background-size: 240px 240px;
-  animation: twinkle 4s ease-in-out infinite;
-}
-.dw-sky-stars-2 {
-  background-image:
-    radial-gradient(1.6px 1.6px at 60px 70px, rgba(255,255,255,0.85), transparent),
-    radial-gradient(1.6px 1.6px at 180px 140px, rgba(255,255,255,0.8), transparent),
-    radial-gradient(2px 2px at 100px 250px, rgba(255,255,255,0.9), transparent),
-    radial-gradient(1.6px 1.6px at 230px 60px, rgba(255,255,255,0.8), transparent),
-    radial-gradient(1.6px 1.6px at 300px 210px, rgba(255,255,255,0.8), transparent),
-    radial-gradient(1.6px 1.6px at 20px 200px, rgba(255,255,255,0.8), transparent);
-  background-repeat: repeat;
-  background-size: 300px 300px;
-  animation: twinkle 6s ease-in-out infinite;
-}
-.dw-sky-clouds {
-  background:
-    radial-gradient(42% 34% at 22% 96%, rgba(205,214,228,0.55), transparent 66%),
-    radial-gradient(38% 30% at 58% 102%, rgba(159,228,255,0.42), transparent 66%),
-    radial-gradient(46% 36% at 82% 98%, rgba(196,205,220,0.5), transparent 66%),
-    radial-gradient(32% 28% at 42% 108%, rgba(214,220,230,0.48), transparent 66%);
-  filter: blur(12px);
-  animation: cloudDrift 16s ease-in-out infinite alternate;
+input.no-spinner {
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 
-/* Sweep underline on hover (DIGITALWERK footer style) */
+input.no-spinner::-webkit-inner-spin-button,
+input.no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .link-sweep {
   position: relative;
   display: inline-block;
 }
+
 .link-sweep::after {
   content: "";
   position: absolute;
@@ -130,21 +85,25 @@ body {
   transform-origin: bottom right;
   transition: transform 0.3s ease-out;
 }
+
 .link-sweep:hover::after {
   transform: scaleX(1);
   transform-origin: bottom left;
 }
 
-/* Decorative ellipse slow spin (DIGITALWERK-style oval) */
-@keyframes dwSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.dw-spin {
-  animation: dwSpin 90s linear infinite;
+@keyframes orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* Site-wide film grain (DIGITALWERK-style) */
+.orbit {
+  animation: orbit 90s linear infinite;
+}
+
 .grain-overlay {
   position: fixed;
   inset: 0;
@@ -155,23 +114,6 @@ body {
   background-repeat: repeat;
 }
 
-/* Antique film grain (used on the video hero) */
-@keyframes filmGrain {
-  0% { transform: translate(0, 0); }
-  10% { transform: translate(-5%, -10%); }
-  20% { transform: translate(-15%, 5%); }
-  30% { transform: translate(7%, -12%); }
-  40% { transform: translate(-5%, 12%); }
-  50% { transform: translate(-12%, 6%); }
-  60% { transform: translate(10%, 0%); }
-  70% { transform: translate(3%, 12%); }
-  80% { transform: translate(-8%, 8%); }
-  90% { transform: translate(-4%, 4%); }
-  100% { transform: translate(0, 0); }
-}
-
-/* Restyle Leaflet's default zoom control to match the dotted/rounded system
-   instead of its plain white squares. */
 .leaflet-control-zoom {
   border: none !important;
   box-shadow: none !important;
@@ -179,6 +121,7 @@ body {
   flex-direction: column;
   gap: 6px;
 }
+
 .leaflet-control-zoom a {
   width: 34px !important;
   height: 34px !important;
@@ -190,6 +133,7 @@ body {
   backdrop-filter: blur(4px);
   font-family: var(--font-mono), monospace;
 }
+
 .leaflet-control-zoom a:hover {
   border-color: var(--color-fg) !important;
   background: var(--color-fg) !important;

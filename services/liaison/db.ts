@@ -1,23 +1,13 @@
 import "server-only";
 
-import { getMongoDb } from "@/lib/mongodb";
-import { allocate } from "./allocate";
-import { seedHouses } from "./seed";
-import type { Config, House, LiaisonState, LogEntry, Student } from "./types";
+import { getMongoDb } from "@/lib/mongo";
+import { allocate } from "@/services/liaison/allocate";
+import { seedHouses } from "@/services/liaison/seed";
+import type { Config, House, LiaisonState, LogEntry, Student } from "@/services/liaison/types";
 
 const COLLECTION_NAME = "liaison_state";
-
-/**
- * The whole workspace is one document. There is exactly one batch being
- * divided at a time, every view reads all of it, and allocation rewrites every
- * student at once — so a single document is both the natural unit and an
- * atomic one. Splitting students into their own collection would buy nothing
- * and cost the all-or-nothing guarantee that allocation depends on.
- */
 const STATE_ID = "current";
 
-/** A roster this size is already generous for one intake; the cap stops an
- *  upload from writing a document Mongo will refuse (16MB) halfway through. */
 export const MAX_STUDENTS = 20000;
 
 export class LiaisonValidationError extends Error {}
@@ -51,7 +41,6 @@ export async function readState(): Promise<LiaisonState> {
     return defaultState();
   }
 
-  // Strip the storage-only fields; what is left is exactly LiaisonState.
   const { houses, students, config, log, allocated } = doc;
 
   return { houses, students, config, log, allocated };
@@ -69,13 +58,6 @@ async function writeState(state: LiaisonState): Promise<LiaisonState> {
   return state;
 }
 
-/**
- * Read → transform → write. Not atomic across the two calls: two liaison
- * operators editing the same workspace at the same moment can have one
- * overwrite the other. Acceptable because this panel is run by one person at a
- * desk, not concurrently at a gate — and the alternative (per-field updates)
- * cannot express "allocate", which rewrites every student together.
- */
 async function mutate(
   transform: (state: LiaisonState) => LiaisonState
 ): Promise<LiaisonState> {
@@ -137,9 +119,7 @@ export async function updateOg(
         candidate.id === houseId
           ? {
               ...candidate,
-              ogs: candidate.ogs.map((og) =>
-                og.id === ogId ? { ...og, name } : og
-              ),
+              ogs: candidate.ogs.map((og) => (og.id === ogId ? { ...og, name } : og)),
             }
           : candidate
       ),
@@ -147,17 +127,12 @@ export async function updateOg(
   });
 }
 
-/** Replaces the roster wholesale — an upload is a new batch, not a merge. The
- *  parse log comes from the client, which is the only place that saw the
- *  original workbook rows. */
 export async function replaceStudents(
   students: Student[],
   log: LogEntry[]
 ): Promise<LiaisonState> {
   if (students.length > MAX_STUDENTS) {
-    throw new LiaisonValidationError(
-      `A batch cannot exceed ${MAX_STUDENTS} students`
-    );
+    throw new LiaisonValidationError(`A batch cannot exceed ${MAX_STUDENTS} students`);
   }
 
   return mutate((state) => ({
@@ -168,15 +143,9 @@ export async function replaceStudents(
   }));
 }
 
-/** Runs the division. `students` replaces the roster first when given, so
- *  "load a demo batch and divide it" stays one call and one write. */
-export async function runAllocation(
-  students?: Student[]
-): Promise<LiaisonState> {
+export async function runAllocation(students?: Student[]): Promise<LiaisonState> {
   if (students && students.length > MAX_STUDENTS) {
-    throw new LiaisonValidationError(
-      `A batch cannot exceed ${MAX_STUDENTS} students`
-    );
+    throw new LiaisonValidationError(`A batch cannot exceed ${MAX_STUDENTS} students`);
   }
 
   return mutate((state) => {

@@ -1,18 +1,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import {
-  SESSION_COOKIE_NAME,
-  hasRole,
-  verifySessionToken,
-} from "@/services/auth/session";
-import Manager from "@/components/hr/manager";
+import LinkManager from "@/components/hr/links";
+import { SESSION_COOKIE_NAME, hasRole, verifySessionToken } from "@/services/auth/session";
 
 export default async function HrPage() {
   const cookieStore = await cookies();
-  const session = verifySessionToken(
-    cookieStore.get(SESSION_COOKIE_NAME)?.value
-  );
+  const session = verifySessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
 
   if (!hasRole(session, "admin")) {
     redirect("/login?next=/hr");
@@ -20,7 +14,7 @@ export default async function HrPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-16">
-      <Manager />
+      <LinkManager />
     </main>
   );
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { readJson } from "@/lib/request";
 import {
   SESSION_COOKIE_NAME,
   SESSION_DURATION_MS,
@@ -8,22 +9,13 @@ import {
 } from "@/services/auth/session";
 
 export async function POST(request: NextRequest) {
-  let body: unknown;
+  const body = await readJson(request);
 
-  try {
-    body = await request.json();
-  } catch {
+  if (!body) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const username =
-    typeof body === "object" && body !== null && "username" in body
-      ? (body as { username: unknown }).username
-      : undefined;
-  const password =
-    typeof body === "object" && body !== null && "password" in body
-      ? (body as { password: unknown }).password
-      : undefined;
+  const { username, password } = body;
 
   if (typeof username !== "string" || typeof password !== "string") {
     return NextResponse.json(
