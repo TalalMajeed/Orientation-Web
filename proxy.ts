@@ -21,15 +21,21 @@ const HOUR = 60 * MINUTE;
 
 const LOGIN_RULE: RateLimitRule = { limit: 10, windowMs: 15 * MINUTE };
 const PUBLIC_WRITE_RULE: RateLimitRule = { limit: 10, windowMs: HOUR };
+const CONTACT_RULE: RateLimitRule = { limit: 3, windowMs: 10 * MINUTE };
 const WRITE_RULE: RateLimitRule = { limit: 60, windowMs: MINUTE };
 const READ_RULE: RateLimitRule = { limit: 200, windowMs: MINUTE };
 
+const CONTACT_PATH = "/api/v1/contact";
 const PUBLIC_WRITE_PATHS = ["/api/v1/newsletter"];
 const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 function ruleFor(pathname: string, method: string): RateLimitRule {
   if (pathname === "/api/v1/auth/login" && method === "POST") {
     return LOGIN_RULE;
+  }
+
+  if (pathname === CONTACT_PATH && !READ_METHODS.has(method)) {
+    return CONTACT_RULE;
   }
 
   if (PUBLIC_WRITE_PATHS.includes(pathname) && !READ_METHODS.has(method)) {

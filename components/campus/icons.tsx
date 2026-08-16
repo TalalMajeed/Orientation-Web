@@ -1,5 +1,3 @@
-// Glyphs are drawn on a 24x24 grid, stroked with currentColor so a single
-// definition serves both the legend chips and the Leaflet map pins.
 const ICON_PATHS: Record<string, string> = {
   all: '<path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   gates:
@@ -22,7 +20,6 @@ const ICON_PATHS: Record<string, string> = {
 
 const iconPath = (category: string) => ICON_PATHS[category] ?? ICON_PATHS.all;
 
-/** Standalone SVG markup, for contexts outside React (Leaflet div icons). */
 export function categoryIconSvg(category: string, size: number, color: string) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath(category)}</svg>`;
 }

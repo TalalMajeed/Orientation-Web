@@ -9,9 +9,12 @@
     "lint": "eslint",
     "test": "jest",
     "e2e": "node scripts/e2e.mjs",
-    "secrets": "node secrets.mjs"
+    "secrets": "node secrets.mjs",
+    "mail-check": "esecrets run -- node scripts/mail-check.mjs"
   },
   "dependencies": {
+    "@azure/msal-node": "^5.5.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "dotenv": "^17.4.2",

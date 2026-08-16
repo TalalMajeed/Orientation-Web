@@ -30,7 +30,7 @@ app/                       Routes only — pages, layouts, API handlers
   schedule/ map/ contact/ societies/ privacy/ terms/
   admin/ login/            Portal directory + shared staff sign-in
   hr/ liaison/             Staff panels
-  api/v1/                  auth, liaison, hr, newsletter endpoints
+  api/v1/                  auth, liaison, hr, newsletter, contact endpoints
   invite/[id]/             Short-link redirect
 
 components/
@@ -42,6 +42,8 @@ components/
 
 services/                  Server-side logic (never imported by client code)
   auth/                    session signing + role guard
+  contact/                 contact-form validation + email body
+  email/                   Microsoft Graph app-only mailer
   liaison/                 db, allocate, seed, validate, respond, types
   hr/  newsletter/         short links, newsletter subscribers
   security/                headers (CSP etc.), limit (rate limiter)
@@ -76,6 +78,8 @@ npx next dev         # website-only: no env needed
 | `HR_USERNAME`, `HR_PASSWORD` | admin login |
 | `HR_SESSION_SECRET` | session cookie signing |
 | `LIAISON_USERNAME`, `LIAISON_PASSWORD` | liaison login (OG team) |
+| `TENANT_ID`, `CLIENT_ID`, `CLIENT_SECRET` | Microsoft Graph app registration (contact form email) |
+| `MS_GRAPH_SENDER` | mailbox the app sends *as* — must be inside the Exchange ApplicationAccessPolicy |
 | `SECRETS_KEY` | `esecrets` / `npm run secrets` pipeline |
 
 Secrets come from the `esecrets` pipeline. `npm run secrets` fetches them into
@@ -89,8 +93,9 @@ npm run build        # production build (needs backend env)
 npm start            # serve the build
 npm run lint         # eslint
 npm test             # jest unit tests
-npm run e2e          # full HTTP walkthrough of the liaison API (run npm run build first)
+npm run e2e          # full HTTP walkthrough of the liaison + newsletter APIs (run npm run build first)
 npm run secrets      # write .env from the secrets service
+npm run mail-check   # verify the Graph mail path; pass an address to send a test
 ```
 
 ---
@@ -116,6 +121,27 @@ npm run secrets      # write .env from the secrets service
   (`font-mono`, labels), Niveau Grotesk (`font-italic`), Rakkas (`font-urdu`).
 - Site-wide film grain and the slow-spinning `.orbit` ellipse come from
   `components/site/chrome.tsx` and `app/globals.css`.
+
+### Public endpoints
+
+| Endpoint | Who | What |
+|---|---|---|
+| `POST /api/v1/contact` | anyone | "Say hello" form → email to `support@orientation.nust.edu.pk` |
+| `POST /api/v1/newsletter` | anyone | subscribe an address (`201` new, `200` already on the list) |
+| `GET /api/v1/newsletter` | admin | list subscribers, newest first |
+| `DELETE /api/v1/newsletter` | admin | unsubscribe an address |
+
+**Contact form.** `services/contact/message.ts` validates and renders the mail;
+`services/email/graph.ts` sends it app-only through Microsoft Graph as
+`MS_GRAPH_SENDER`, with `Reply-To` set to the visitor so staff can answer from
+the inbox. `support@` here is only the *recipient* — the Exchange
+ApplicationAccessPolicy governs the sending mailbox alone. Run
+`npm run mail-check <address>` to prove the path before relying on it.
+
+**Newsletter.** Addresses are normalized and stored in the `newsletter`
+collection behind a unique index on `email`, so a repeat submission reports
+"already subscribed" rather than duplicating a row — including under
+concurrent submissions of the same address.
 
 ---
 

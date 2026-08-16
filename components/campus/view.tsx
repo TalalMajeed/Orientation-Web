@@ -18,7 +18,6 @@ const PIN_SIZE = 26;
 const INK = "#090c13";
 const CREAM = "#F4F1EA";
 
-/** Perceived brightness, so the glyph stays readable on every category colour. */
 function glyphColor(fill: string) {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(fill.slice(i, i + 2), 16));
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? INK : CREAM;

@@ -165,6 +165,50 @@ try {
     if (response.status === 429) limited++;
   }
   check("write budget kicks in after 60/min", limited >= 9, `${limited} refused`);
+
+  // --- newsletter -------------------------------------------------------
+  r = await api("/api/v1/newsletter", {
+    method: "POST",
+    body: JSON.stringify({ email: "Subscriber@nust.edu.pk" }),
+  });
+  check("newsletter accepts a new address", r.status === 201, JSON.stringify(r.body));
+
+  r = await api("/api/v1/newsletter", {
+    method: "POST",
+    body: JSON.stringify({ email: "subscriber@NUST.edu.pk" }),
+  });
+  check("newsletter reports a repeat address", r.status === 200, JSON.stringify(r.body));
+
+  r = await api("/api/v1/newsletter", {
+    method: "POST",
+    body: JSON.stringify({ email: "not-an-email" }),
+  });
+  check("newsletter rejects a malformed address", r.status === 400);
+
+  r = await api("/api/v1/newsletter");
+  check("liaison cannot read subscribers", r.status === 401);
+
+  r = await api("/api/v1/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ username: "admin", password: "adminpass" }),
+  });
+  check("admin signs in", r.status === 200 && r.body.role === "admin");
+
+  r = await api("/api/v1/newsletter");
+  check(
+    "subscriber was stored once, normalized",
+    r.status === 200 && r.body.count === 1 && r.body.subscribers[0].email === "subscriber@nust.edu.pk",
+    JSON.stringify(r.body)
+  );
+
+  r = await api("/api/v1/newsletter", {
+    method: "DELETE",
+    body: JSON.stringify({ email: "subscriber@nust.edu.pk" }),
+  });
+  check("admin can unsubscribe", r.status === 200);
+
+  r = await api("/api/v1/newsletter");
+  check("subscriber list is empty again", r.body.count === 0);
 } finally {
   server.kill("SIGTERM");
   await mongod.stop();
