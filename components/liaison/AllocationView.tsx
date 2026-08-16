@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLiaison } from "./store";
 import { downloadRows, makeDemoStudents } from "./logic";
 import type { Student } from "./types";
@@ -18,6 +18,25 @@ export default function AllocationView() {
   } = useLiaison();
   const [openHouse, setOpenHouse] = useState<string | null>(null);
   const [demoCount, setDemoCount] = useState(300);
+  const [capDraft, setCapDraft] = useState(
+    config.houseCapacity === null ? "" : String(config.houseCapacity)
+  );
+
+  // The cap now costs a request, so it saves on blur rather than per keystroke.
+  // Empty means "no cap"; anything below 1 is not a cap the server accepts.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- adopt the saved value
+    setCapDraft(config.houseCapacity === null ? "" : String(config.houseCapacity));
+  }, [config.houseCapacity]);
+
+  const commitCap = () => {
+    const trimmed = capDraft.trim();
+    const next = trimmed === "" ? null : Math.max(1, Math.floor(Number(trimmed) || 0));
+
+    if (next !== config.houseCapacity) {
+      void setConfig({ houseCapacity: next });
+    }
+  };
 
   const houseName = (id: string | null) => houses.find((h) => h.id === id)?.name ?? "—";
   const ogLabel = (s: Student) => {
@@ -71,12 +90,14 @@ export default function AllocationView() {
             House cap
             <input
               type="number"
-              min={0}
+              min={1}
               placeholder="auto"
-              value={config.houseCapacity ?? ""}
-              onChange={(e) =>
-                setConfig({ houseCapacity: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) })
-              }
+              value={capDraft}
+              onChange={(e) => setCapDraft(e.target.value)}
+              onBlur={commitCap}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
               className="no-spinner w-20 rounded-md border border-fg/25 bg-transparent px-2 py-1 text-fg focus:border-fg focus:outline-none"
             />
           </label>

@@ -5,7 +5,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
   title: "Terms of Service — NUST Orientation '26",
-  description: "Terms of Service for the NUST Orientation Week website and ticketing platform.",
+  description: "Terms of Service for the NUST Orientation Week website.",
   path: "/terms",
 });
 
@@ -13,20 +13,13 @@ const sections: { title: string; body: string[] }[] = [
   {
     title: "Acceptance of terms",
     body: [
-      "By registering for Orientation Week, buying a ticket, or otherwise using this site, you agree to these terms. If you don't agree, please don't use the site.",
-    ],
-  },
-  {
-    title: "Tickets & registration",
-    body: [
-      "E-tickets are issued to the name and email used at registration and are non-transferable unless stated otherwise for a specific event.",
-      "You're responsible for keeping your ticket QR code and login details private — we can't be held responsible for tickets used by someone else after being shared.",
+      "By registering for Orientation Week or otherwise using this site, you agree to these terms. If you don't agree, please don't use the site.",
     ],
   },
   {
     title: "Acceptable use",
     body: [
-      "Use the site and attend events respectfully. Don't attempt to disrupt the platform, forge tickets, or misuse the map, schedule, or contact tools.",
+      "Use the site and attend events respectfully. Don't attempt to disrupt the platform or misuse the map, schedule, or contact tools.",
     ],
   },
   {

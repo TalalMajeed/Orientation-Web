@@ -4,10 +4,8 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const DEFAULT_LANDING: Record<string, string> = {
-  admin: "/event-tickets",
-  ticketing: "/event-tickets",
-  scanner: "/socials",
-  hunt: "/hunt",
+  admin: "/hr",
+  liaison: "/liaison",
 };
 
 /**
@@ -17,9 +15,7 @@ const DEFAULT_LANDING: Record<string, string> = {
  */
 const BLOCKED: Record<string, string[]> = {
   admin: [],
-  ticketing: ["/hr", "/hunt"],
-  scanner: ["/event-tickets", "/hr", "/hunt"],
-  hunt: ["/event-tickets", "/hr"],
+  liaison: ["/hr"],
 };
 
 /** Only same-origin relative paths, so ?next= cannot bounce staff off-site. */
@@ -97,7 +93,7 @@ function LoginForm() {
           Staff
         </h1>
         <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-fg/50">
-          Sign in to the ticketing desk
+          Sign in to the staff panels
         </p>
 
         <form className="mt-8 space-y-3" onSubmit={handleSubmit}>

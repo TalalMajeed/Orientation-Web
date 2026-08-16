@@ -11,7 +11,7 @@ export default function DwEvents() {
             Events
           </h2>
           <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-dotted border-fg/40 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-fg/60">
-            Coming soon — Scavenger Hunt &amp; Social Night details not yet finalized
+            Coming soon — event details not yet finalized
           </span>
         </div>
 

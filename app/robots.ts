@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/hr", "/login", "/scan", "/socials", "/hunt", "/event-tickets"],
+      disallow: ["/admin", "/hr", "/liaison", "/login"],
     },
     sitemap: "https://orientation.nust.edu.pk/sitemap.xml",
   };

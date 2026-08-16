@@ -12,7 +12,7 @@ const jsonLd = {
   "@type": "EducationEvent",
   name: "NUST Orientation 2026",
   description:
-    "Official NUST Orientation Week hub for incoming students — event schedule, campus map, tickets, scavenger hunt and everything you need to start your story at NUST H-12.",
+    "Official NUST Orientation Week hub for incoming students — event schedule, campus map, societies and everything you need to start your story at NUST H-12.",
   url: "https://orientation.nust.edu.pk",
   image: "https://orientation.nust.edu.pk/logo-v2.png",
   organizer: {

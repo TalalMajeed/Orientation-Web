@@ -56,9 +56,9 @@ export default function StudentsView() {
     try {
       const rows = await parseFile(file);
       const { students: parsed, log } = processRows(rows);
-      setUpload(parsed, log);
+      await setUpload(parsed, log);
     } catch {
-      setUpload([], [{ type: "info", row: null, message: "Could not read that file. Use .csv, .xlsx or .xls." }]);
+      await setUpload([], [{ type: "info", row: null, message: "Could not read that file. Use .csv, .xlsx or .xls." }]);
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";

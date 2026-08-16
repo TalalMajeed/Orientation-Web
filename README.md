@@ -3,11 +3,10 @@
 The official web hub for NUST's incoming batch. It has two halves:
 
 1. **The public website** — an immersive, editorial landing experience (video
-   hero, schedule, campus map, event tickets, contact) styled after modern
+   hero, schedule, campus map, societies, contact) styled after modern
    award-winning agency sites.
-2. **The ticketing & admin system** — event e-ticketing (issue → email QR →
-   scan at the gate), a support-ticket helpdesk, HR link tools, and a
-   newsletter, all backed by MongoDB and Microsoft Graph mail.
+2. **The admin system** — the liaison/house allocation tool, HR invite links,
+   and a newsletter, all backed by MongoDB.
 
 ---
 
@@ -17,7 +16,7 @@ The official web hub for NUST's incoming batch. It has two halves:
 - **three.js / @react-three/fiber / @react-three/drei** — WebGL starfield + clouds on the intro gate
 - **Leaflet / react-leaflet** — interactive campus map (CARTO Voyager tiles)
 - **Lenis** — smooth scrolling · **GSAP** — hero animation
-- **MongoDB** (`lib/mongodb.ts`) · **Microsoft Graph** mail (`services/email/graph.ts`) · HMAC-cookie auth (`services/auth/session.ts`)
+- **MongoDB** (`lib/mongodb.ts`) · HMAC-cookie auth (`services/auth/session.ts`)
 
 ---
 
@@ -27,18 +26,16 @@ The official web hub for NUST's incoming batch. It has two halves:
 app/
   page.tsx               # Landing (website)
   schedule/  map/  contact/    # Website pages
-  tickets/               # Support-ticket helpdesk (admin)
-  event-tickets/         # Event e-ticketing (issue / list)
-  login/  scan/          # Auth + QR gate scanning
+  liaison/               # OG houses & batch allocation (admin)
+  hr/  login/            # HR invite links + shared staff auth
   api/                   # Backend routes
 components/
   website/               # <- the public website UI
-    dw/                  # Landing sections (hero, schedule, map, tickets, contact, footer)
+    dw/                  # Landing sections (hero, schedule, map, contact, footer)
     site/                # EntryExperience (intro gate), MapView, ThemeToggle, WebsiteChrome
     hero/Scene.tsx       # WebGL stars + clouds
-  tickets/               # Ticketing/admin UI
-services/                # tickets, auth, email, newsletter, hr
-docs/event-ticketing.md  # Ticketing system design brief
+  liaison/  hr/          # Admin panel UI
+services/                # auth, liaison, hr, newsletter, security
 docs/site-structure.md   # Full page-by-page map: public site + every admin panel
 ```
 
@@ -49,8 +46,8 @@ can log into what), see [`docs/site-structure.md`](docs/site-structure.md).
 
 ## Getting started
 
-**Prerequisites:** Node 20+, and MongoDB + Microsoft Graph credentials for the
-backend features (the public website runs without them).
+**Prerequisites:** Node 20+, and MongoDB credentials for the backend features
+(the public website runs without them).
 
 ```bash
 npm install
@@ -75,11 +72,9 @@ Backend features need these (set via the pipeline or a local `.env`):
 
 | Variable | Used by |
 |---|---|
-| `MONGO_DB_URI` | database (tickets, newsletter) |
-| `TENANT_ID`, `CLIENT_ID`, `CLIENT_SECRET`, `MS_GRAPH_SENDER` | ticket emails (MS Graph) |
+| `MONGO_DB_URI` | database (liaison, HR links, newsletter) |
 | `HR_USERNAME`, `HR_PASSWORD`, `HR_SESSION_SECRET` | admin auth |
-| `TICKETING_ADMIN_USERNAME`, `TICKETING_ADMIN_PASSWORD` | ticketing admin auth (event head) |
-| `SCANNER_USERNAME`, `SCANNER_PASSWORD` | gate scanner auth |
+| `LIAISON_USERNAME`, `LIAISON_PASSWORD` | liaison panel auth (OG team) |
 | `SECRETS_KEY` | `esecrets` pipeline |
 
 ### Common scripts
@@ -88,16 +83,15 @@ Backend features need these (set via the pipeline or a local `.env`):
 npm run build        # production build (needs backend env)
 npm start            # serve the build
 npm run lint
-npm test             # jest
-npm run e2e          # end-to-end checks
+npm test             # jest (unit + liaison API against a real mongod)
+npm run e2e          # full HTTP walkthrough, real server (needs npm run build first)
 ```
 
 ---
 
 ## The website
 
-**Pages:** `/` (landing), `/schedule`, `/map`, `/contact`. The nav's "Tickets"
-links into the event-ticketing system (`/event-tickets`).
+**Pages:** `/` (landing), `/schedule`, `/map`, `/contact`, `/societies`.
 
 **The intro gate** (`components/website/site/EntryExperience.tsx`) shows a WebGL
 night sky (`hero/Scene.tsx`) with the "چلو شروع کریں" button; entering reveals
@@ -112,15 +106,25 @@ the video hero and starts its audio.
   fixed. Default is light; the toggle is bottom-right.
 - Site-wide **film grain** and a subtle **decorative ellipse** behind headings.
 - Website-only chrome (smooth scroll, theme toggle, grain) lives in
-  `WebsiteChrome` so the admin/ticketing pages are unaffected.
+  `WebsiteChrome` so the admin pages are unaffected.
 
 ---
 
-## Ticketing & admin
+## Admin panels
 
-Event e-ticketing, scanning, and the helpdesk are documented in
-[`docs/event-ticketing.md`](docs/event-ticketing.md). See
+Every staff panel — liaison, HR links — is mapped route by route in
+[`docs/site-structure.md`](docs/site-structure.md). See
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for contribution guidelines.
+
+**Liaison API.** The OG house/allocation workspace is persisted server-side and
+reached through `/api/v1/liaison/*` (`state`, `config`, `houses`,
+`houses/[id]`, `houses/reseed`, `students`, `allocation`). Every endpoint
+requires a `liaison` or `admin` session and answers with the whole workspace,
+so the client replaces its state rather than merging.
+
+**Request limits & headers.** `proxy.ts` rate-limits `/api/*` and `/invite/*`
+per IP (`services/security/rateLimit.ts`) and sets CSP/HSTS/frame/referrer
+headers on every response (`services/security/headers.ts`).
 
 ---
 

@@ -1,34 +1,29 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Config, House, LogEntry, Student } from "./types";
-import { seedHouses } from "./seed";
-import { allocate } from "./logic";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import type { Config, House, LiaisonState, LogEntry, Student } from "./types";
 
-type State = {
-  houses: House[];
-  students: Student[];
-  config: Config;
-  log: LogEntry[];
-  allocated: boolean;
-};
-
-type Ctx = State & {
+type Ctx = LiaisonState & {
   loaded: boolean;
-  setUpload: (students: Student[], log: LogEntry[]) => void;
-  runAllocation: () => void;
-  loadDemoAndAllocate: (students: Student[]) => void;
-  resetAllocation: () => void;
-  setConfig: (c: Partial<Config>) => void;
-  updateHouse: (id: string, patch: Partial<Pick<House, "ol">>) => void;
-  updateOG: (houseId: string, ogId: string, name: string) => void;
-  reseedHouses: () => void;
-  clearAll: () => void;
+  error: string | null;
+  busy: boolean;
+  setUpload: (students: Student[], log: LogEntry[]) => Promise<void>;
+  runAllocation: () => Promise<void>;
+  loadDemoAndAllocate: (students: Student[]) => Promise<void>;
+  resetAllocation: () => Promise<void>;
+  setConfig: (c: Partial<Config>) => Promise<void>;
+  updateHouse: (id: string, patch: Partial<Pick<House, "ol">>) => Promise<void>;
+  updateOG: (houseId: string, ogId: string, name: string) => Promise<void>;
+  reseedHouses: () => Promise<void>;
+  clearAll: () => Promise<void>;
 };
 
-const KEY = "liaison-state-v1";
-const defaultState: State = {
-  houses: seedHouses(),
+const API = "/api/v1/liaison";
+
+// Rendered before the first fetch lands. The server owns the real state, so
+// this is only ever a placeholder — never something that gets saved.
+const emptyState: LiaisonState = {
+  houses: [],
   students: [],
   config: { houseCapacity: null },
   log: [],
@@ -38,58 +33,79 @@ const defaultState: State = {
 const LiaisonCtx = createContext<Ctx | null>(null);
 
 export function LiaisonProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>(defaultState);
+  const [state, setState] = useState<LiaisonState>(emptyState);
   const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setState({ ...defaultState, ...JSON.parse(raw) });
-    } catch {}
-    setLoaded(true);
-  }, []);
+  /**
+   * Every endpoint answers with the whole workspace, so each call ends by
+   * replacing state outright. Nothing is applied optimistically: a write that
+   * the server rejected must not linger on screen as though it succeeded.
+   */
+  const send = useCallback(
+    async (path: string, init?: RequestInit): Promise<void> => {
+      setBusy(true);
+      setError(null);
 
+      try {
+        const response = await fetch(`${API}${path}`, {
+          ...init,
+          headers: init?.body ? { "Content-Type": "application/json" } : undefined,
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          setError(typeof data.error === "string" ? data.error : "Request failed");
+          return;
+        }
+
+        if (data.state) {
+          setState(data.state as LiaisonState);
+        }
+      } catch {
+        setError("Could not reach the server");
+      } finally {
+        setBusy(false);
+      }
+    },
+    []
+  );
+
+  // Load the workspace once on mount. This is the "subscribe to an external
+  // system" case the rule exists for — the state lives on the server, and the
+  // only way to have it is to go and ask.
   useEffect(() => {
-    if (!loaded) return;
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-    } catch {}
-  }, [state, loaded]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch of server-owned state
+    void send("/state").finally(() => setLoaded(true));
+  }, [send]);
 
   const value: Ctx = {
     ...state,
     loaded,
-    setUpload: (students, log) => setState((s) => ({ ...s, students, log, allocated: false })),
-    runAllocation: () =>
-      setState((s) => {
-        const { students, log } = allocate(s.students, s.houses, s.config);
-        return { ...s, students, log, allocated: true };
-      }),
-    // Seed a demo batch and divide it in one atomic step, so the allocation
-    // view can be populated end-to-end from a single click.
+    busy,
+    error,
+    setUpload: (students, log) =>
+      send("/students", { method: "PUT", body: JSON.stringify({ students, log }) }),
+    runAllocation: () => send("/allocation", { method: "POST" }),
+    // Seed a demo batch and divide it in one call, so the allocation view can
+    // be populated end-to-end from a single click — and in one server write.
     loadDemoAndAllocate: (demo) =>
-      setState((s) => {
-        const { students, log } = allocate(demo, s.houses, s.config);
-        return { ...s, students, log, allocated: true };
-      }),
-    resetAllocation: () =>
-      setState((s) => ({
-        ...s,
-        students: s.students.map((st) => ({ ...st, houseId: null, ogId: null })),
-        allocated: false,
-      })),
-    setConfig: (c) => setState((s) => ({ ...s, config: { ...s.config, ...c } })),
+      send("/allocation", { method: "POST", body: JSON.stringify({ students: demo }) }),
+    resetAllocation: () => send("/allocation", { method: "DELETE" }),
+    setConfig: (c) => send("/config", { method: "PATCH", body: JSON.stringify(c) }),
     updateHouse: (id, patch) =>
-      setState((s) => ({ ...s, houses: s.houses.map((h) => (h.id === id ? { ...h, ...patch } : h)) })),
+      send(`/houses/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      }),
     updateOG: (houseId, ogId, name) =>
-      setState((s) => ({
-        ...s,
-        houses: s.houses.map((h) =>
-          h.id === houseId ? { ...h, ogs: h.ogs.map((o) => (o.id === ogId ? { ...o, name } : o)) } : h
-        ),
-      })),
-    reseedHouses: () => setState((s) => ({ ...s, houses: seedHouses() })),
-    clearAll: () => setState(defaultState),
+      send(`/houses/${encodeURIComponent(houseId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ ogId, name }),
+      }),
+    reseedHouses: () => send("/houses/reseed", { method: "POST" }),
+    clearAll: () => send("/state", { method: "DELETE" }),
   };
 
   return <LiaisonCtx.Provider value={value}>{children}</LiaisonCtx.Provider>;

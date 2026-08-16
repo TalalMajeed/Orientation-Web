@@ -40,7 +40,7 @@ export default function ContactBlock() {
           {/* Left: contact content */}
           <div className="max-w-xl">
             <p className="font-serif text-2xl leading-[1.3] text-fg sm:text-3xl">
-              Questions about Orientation Week, tickets, or your house? The
+              Questions about Orientation Week, the schedule, or your house? The
               organizing team is one message away.
             </p>
             <ContactForm />

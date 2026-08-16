@@ -12,30 +12,9 @@ const PORTALS: Portal[] = [
   {
     name: "Liaison",
     desc: "OG houses, teams & batch allocation",
-    href: "/liaison/login",
+    href: "/login?next=/liaison",
     color: "#D85503",
-    hint: "Demo login",
-  },
-  {
-    name: "Socials",
-    desc: "Gate check-in — scan entry tickets",
-    href: "/socials",
-    color: "#4B8FB3",
-    hint: "Scanner credentials",
-  },
-  {
-    name: "Event Tickets",
-    desc: "Issue, email & manage entry tickets",
-    href: "/login",
-    color: "#2A5290",
-    hint: "Staff credentials",
-  },
-  {
-    name: "Support Desk",
-    desc: "Submit & track support requests",
-    href: "/tickets/login",
-    color: "#4FB49A",
-    hint: "Student account",
+    hint: "Liaison credentials",
   },
   {
     name: "HR",
@@ -43,13 +22,6 @@ const PORTALS: Portal[] = [
     href: "/login?next=/hr",
     color: "#B8860B",
     hint: "Admin credentials",
-  },
-  {
-    name: "Hunt",
-    desc: "Generate QR codes & run the scavenger hunt",
-    href: "/login?next=/hunt",
-    color: "#8F3410",
-    hint: "Hunt team or admin credentials",
   },
 ];
 

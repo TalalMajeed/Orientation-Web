@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { isAuthed, logout } from "@/components/liaison/auth";
 import { LiaisonProvider } from "@/components/liaison/store";
-import Overview from "@/components/liaison/Overview";
-import HousesView from "@/components/liaison/HousesView";
-import StudentsView from "@/components/liaison/StudentsView";
-import AllocationView from "@/components/liaison/AllocationView";
+import Workspace, { type TabId } from "@/components/liaison/Workspace";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -16,19 +12,18 @@ const TABS = [
   { id: "allocation", label: "Allocation" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
-
+// The session cookie is the gate: proxy.ts redirects anyone without a
+// liaison/admin session to /login before this renders, and every API call the
+// panel makes re-checks the role server-side.
 export default function LiaisonDashboard() {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<TabId>("overview");
 
-  useEffect(() => {
-    if (!isAuthed()) router.replace("/liaison/login");
-    else setReady(true);
-  }, [router]);
-
-  if (!ready) return <main className="min-h-screen bg-surface" />;
+  const signOut = async () => {
+    await fetch("/api/v1/auth/login", { method: "DELETE" });
+    router.replace("/login?next=/liaison");
+    router.refresh();
+  };
 
   return (
     <LiaisonProvider>
@@ -42,10 +37,7 @@ export default function LiaisonDashboard() {
               </span>
             </div>
             <button
-              onClick={() => {
-                logout();
-                router.replace("/liaison/login");
-              }}
+              onClick={signOut}
               className="rounded-full border-2 border-dotted border-fg/40 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-fg transition-colors hover:border-fg"
             >
               Log out
@@ -67,10 +59,7 @@ export default function LiaisonDashboard() {
         </header>
 
         <div className="mx-auto max-w-[1400px] px-6 py-10 sm:px-10">
-          {tab === "overview" && <Overview />}
-          {tab === "houses" && <HousesView />}
-          {tab === "students" && <StudentsView />}
-          {tab === "allocation" && <AllocationView />}
+          <Workspace tab={tab} />
         </div>
       </main>
     </LiaisonProvider>

@@ -37,7 +37,7 @@ const plexMono = IBM_Plex_Mono({
 const siteUrl = "https://orientation.nust.edu.pk";
 const title = "NUST Orientation 2026 — Ab Kahani Tumhari Hai";
 const description =
-  "Official NUST Orientation Week hub for incoming students — event schedule, campus map, tickets, scavenger hunt and everything you need to start your story at NUST H-12.";
+  "Official NUST Orientation Week hub for incoming students — event schedule, campus map, societies and everything you need to start your story at NUST H-12.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -52,7 +52,6 @@ export const metadata: Metadata = {
     "NUST H-12",
     "NUST freshers",
     "NUST orientation week",
-    "NUST tickets",
     "NUST campus map",
     "National University of Sciences and Technology orientation",
   ],

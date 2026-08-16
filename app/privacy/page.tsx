@@ -5,7 +5,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
   title: "Privacy Policy — NUST Orientation '26",
-  description: "Privacy Policy for the NUST Orientation Week website and ticketing platform.",
+  description: "Privacy Policy for the NUST Orientation Week website.",
   path: "/privacy",
 });
 
@@ -13,21 +13,21 @@ const sections: { title: string; body: string[] }[] = [
   {
     title: "Information we collect",
     body: [
-      "When you register for Orientation, buy a ticket, or sign up for the newsletter, we collect basic details like your name, NUST email address, and CMS/registration number.",
+      "When you register for Orientation or sign up for the newsletter, we collect basic details like your name, NUST email address, and CMS/registration number.",
       "We also collect standard technical data — device, browser, and pages visited — to keep the site working reliably.",
     ],
   },
   {
     title: "How we use it",
     body: [
-      "Your information is used to issue and verify e-tickets, send you schedule updates, and keep you posted on Orientation Week news.",
+      "Your information is used to send you schedule updates and keep you posted on Orientation Week news.",
       "Cookies help us remember your session and understand which parts of the site are actually useful, so we can improve it year over year.",
     ],
   },
   {
     title: "Sharing",
     body: [
-      "We don't sell your data. Information is only shared with NUST societies and volunteers directly involved in running Orientation Week, and only as needed to check you in at events.",
+      "We don't sell your data. Information is only shared with NUST societies and volunteers directly involved in running Orientation Week, and only as needed to run the event.",
     ],
   },
   {

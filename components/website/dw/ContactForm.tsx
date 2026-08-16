@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
-// The Support Desk (/tickets/*) has no backend of its own — this hands the
-// visitor's message off as a prefilled draft on its Issue Ticket page rather
-// than pretending to save it somewhere.
+const SUPPORT_EMAIL = "support@orientation.nust.edu.pk";
+
+// There is no backend for contact messages — this opens the visitor's own mail
+// client with the message prefilled rather than pretending to save it
+// somewhere.
 export default function ContactForm() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -18,8 +18,9 @@ export default function ContactForm() {
     const subject = `Message from ${name.trim() || "website visitor"}`;
     const body = email.trim() ? `${message.trim()}\n\n— ${name.trim() || "Anonymous"} (${email.trim()})` : message.trim();
 
-    const params = new URLSearchParams({ subject, body });
-    router.push(`/tickets/issue?${params.toString()}`);
+    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
   }
 
   const field =

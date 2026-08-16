@@ -5,6 +5,8 @@ import {
   getRequestSession,
   hasRole,
 } from "@/services/auth/session";
+import { applySecurityHeaders } from "@/services/security/headers";
+import { checkRateLimit, type RateLimitRule } from "@/services/security/rateLimit";
 
 /**
  * Proxy always runs on the Node.js runtime, so it can reuse the real session
@@ -12,37 +14,127 @@ import {
  * implementation of the same check.
  *
  * Route segment config is not allowed here, so the path filter lives inline.
+ *
+ * Three jobs, in order: rate limiting, redirects for guarded pages, and
+ * security headers on the way out. Only the first is a hard stop; the redirect
+ * is convenience — every route handler calls requireRole itself.
  */
-// /socials self-gates (renders its own login), and /scan just redirects to it,
-// so neither is listed here — proxy only guards the pages that bounce to /login.
 const GUARDED: { prefix: string; roles: StaffRole[] }[] = [
-  { prefix: "/event-tickets", roles: ["admin", "ticketing"] },
   { prefix: "/hr", roles: ["admin"] },
-  { prefix: "/hunt", roles: ["admin", "hunt"] },
+  { prefix: "/liaison", roles: ["liaison", "admin"] },
 ];
 
-// Paths that sit under a guarded prefix but must stay public — /hunt/c/<code>
-// is the page a student's phone opens straight from the QR, with no session.
-const PUBLIC_EXCEPTIONS = ["/hr/login", "/hunt/c"];
+// Paths that sit under a guarded prefix but must stay public.
+const PUBLIC_EXCEPTIONS = ["/hr/login", "/liaison/login"];
 
 /** Where each role belongs when the page they asked for is not theirs. */
 const LANDING: Record<StaffRole, string> = {
-  admin: "/event-tickets",
-  ticketing: "/event-tickets",
-  scanner: "/socials",
-  hunt: "/hunt",
+  admin: "/hr",
+  liaison: "/liaison",
 };
 
+// --- Rate limits -------------------------------------------------------------
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+
 /**
- * Redirects only — never the security boundary. Every route handler re-checks
- * the session itself, so a gap here cannot expose a page's data.
+ * Budgets are per IP per window. They are set from what the panels actually
+ * do — the liaison store issues one request per action, and a page load is a
+ * handful — so a real operator never approaches them, while a script does
+ * immediately.
  */
+const LOGIN_RULE: RateLimitRule = { limit: 10, windowMs: 15 * MINUTE };
+const PUBLIC_WRITE_RULE: RateLimitRule = { limit: 10, windowMs: HOUR };
+const WRITE_RULE: RateLimitRule = { limit: 60, windowMs: MINUTE };
+const READ_RULE: RateLimitRule = { limit: 200, windowMs: MINUTE };
+
+/** Endpoints anyone can reach without a session get the tightest budget —
+ *  they are the ones a stranger can spend. */
+const PUBLIC_WRITE_PATHS = ["/api/v1/newsletter"];
+
+const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+function ruleFor(pathname: string, method: string): RateLimitRule {
+  if (pathname === "/api/v1/auth/login" && method === "POST") {
+    return LOGIN_RULE;
+  }
+
+  if (PUBLIC_WRITE_PATHS.includes(pathname) && !READ_METHODS.has(method)) {
+    return PUBLIC_WRITE_RULE;
+  }
+
+  return READ_METHODS.has(method) ? READ_RULE : WRITE_RULE;
+}
+
+/**
+ * The client address as the platform reports it. Behind a proxy that is
+ * `x-forwarded-for`'s first entry — which the client can forge if requests
+ * can reach the app without passing through that proxy. Deploy so they cannot
+ * (Vercel and Cloud Run both overwrite the header), or this degrades to a
+ * speed bump rather than a limit.
+ */
+function clientKey(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+
+  if (forwarded) {
+    const first = forwarded.split(",")[0].trim();
+
+    if (first) {
+      return first;
+    }
+  }
+
+  return request.headers.get("x-real-ip") ?? "unknown";
+}
+
+/** Rate-limited surfaces: the API, and /invite, which is a route handler that
+ *  hits the database on every request even though it does not live under /api. */
+function isRateLimited(pathname: string): boolean {
+  return pathname.startsWith("/api/") || pathname.startsWith("/invite/");
+}
+
+function withHeaders(response: NextResponse, request: NextRequest): NextResponse {
+  applySecurityHeaders(
+    response.headers,
+    request.nextUrl.protocol === "https:" ||
+      request.headers.get("x-forwarded-proto") === "https"
+  );
+
+  return response;
+}
+
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // No dedicated favicon asset — it's just the logo.
   if (pathname === "/favicon.ico") {
-    return NextResponse.rewrite(new URL("/logo.png", request.url));
+    return withHeaders(
+      NextResponse.rewrite(new URL("/logo.png", request.url)),
+      request
+    );
+  }
+
+  if (isRateLimited(pathname)) {
+    const rule = ruleFor(pathname, request.method);
+    const result = checkRateLimit(`${clientKey(request)}:${pathname}`, rule);
+
+    if (!result.allowed) {
+      const limited = NextResponse.json(
+        { error: "Too many requests. Try again shortly." },
+        { status: 429 }
+      );
+
+      limited.headers.set("Retry-After", String(result.retryAfterSeconds));
+      limited.headers.set("RateLimit-Limit", String(result.limit));
+      limited.headers.set("RateLimit-Remaining", "0");
+      limited.headers.set(
+        "RateLimit-Reset",
+        String(result.retryAfterSeconds)
+      );
+
+      return withHeaders(limited, request);
+    }
   }
 
   if (
@@ -50,7 +142,7 @@ export default function proxy(request: NextRequest) {
       (exception) => pathname === exception || pathname.startsWith(`${exception}/`)
     )
   ) {
-    return NextResponse.next();
+    return withHeaders(NextResponse.next(), request);
   }
 
   const guard = GUARDED.find(
@@ -58,13 +150,13 @@ export default function proxy(request: NextRequest) {
   );
 
   if (!guard) {
-    return NextResponse.next();
+    return withHeaders(NextResponse.next(), request);
   }
 
   const session = getRequestSession(request);
 
   if (hasRole(session, ...guard.roles)) {
-    return NextResponse.next();
+    return withHeaders(NextResponse.next(), request);
   }
 
   // Signed in, wrong role. Sending them to /login would ask for credentials
@@ -75,11 +167,11 @@ export default function proxy(request: NextRequest) {
     const url = new URL(LANDING[session.role], request.url);
     url.searchParams.set("denied", pathname);
 
-    return NextResponse.redirect(url);
+    return withHeaders(NextResponse.redirect(url), request);
   }
 
   const url = new URL("/login", request.url);
   url.searchParams.set("next", pathname);
 
-  return NextResponse.redirect(url);
+  return withHeaders(NextResponse.redirect(url), request);
 }

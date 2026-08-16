@@ -10,18 +10,17 @@ const SESSION_COOKIE_NAME = "hr_session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 /**
- * `ticketing` is the event head: everything `admin` can do with tickets and the
- * gate, minus the HR invite-link panel — that stays with HR. `hunt` is scoped
- * the same way, but for the scavenger hunt panel instead.
+ * `admin` reaches everything. `liaison` is scoped to the OG house/allocation
+ * panel only, so the OG team's credentials cannot mint HR invite links.
  */
-export type StaffRole = "admin" | "ticketing" | "scanner" | "hunt";
+export type StaffRole = "admin" | "liaison";
 
 export interface StaffSession {
   role: StaffRole;
   expiresAt: number;
 }
 
-const ROLES: StaffRole[] = ["admin", "ticketing", "scanner", "hunt"];
+const ROLES: StaffRole[] = ["admin", "liaison"];
 
 function isStaffRole(candidate: string): candidate is StaffRole {
   return (ROLES as string[]).includes(candidate);
@@ -73,8 +72,8 @@ function matches(
 /**
  * Resolves credentials to a role. Admin credentials are the pre-existing
  * HR_USERNAME/HR_PASSWORD pair, so the HR invite-link panel keeps working.
- * Ticketing, scanner, and hunt credentials are optional: if a pair is not
- * configured, nobody can log in as that role, but admin login is unaffected.
+ * Liaison credentials are optional: if the pair is not configured, nobody can
+ * log in as that role, but admin login is unaffected.
  */
 export function verifyCredentials(
   candidateUsername: string,
@@ -82,12 +81,8 @@ export function verifyCredentials(
 ): StaffRole | null {
   const adminUsername = process.env.HR_USERNAME;
   const adminPassword = process.env.HR_PASSWORD;
-  const ticketingUsername = process.env.TICKETING_ADMIN_USERNAME;
-  const ticketingPassword = process.env.TICKETING_ADMIN_PASSWORD;
-  const scannerUsername = process.env.SCANNER_USERNAME;
-  const scannerPassword = process.env.SCANNER_PASSWORD;
-  const huntUsername = process.env.HUNT_USERNAME;
-  const huntPassword = process.env.HUNT_PASSWORD;
+  const liaisonUsername = process.env.LIAISON_USERNAME;
+  const liaisonPassword = process.env.LIAISON_PASSWORD;
 
   if (!adminUsername || !adminPassword) {
     throw new Error(
@@ -100,31 +95,9 @@ export function verifyCredentials(
   }
 
   if (
-    matches(
-      candidateUsername,
-      candidatePassword,
-      ticketingUsername,
-      ticketingPassword
-    )
+    matches(candidateUsername, candidatePassword, liaisonUsername, liaisonPassword)
   ) {
-    return "ticketing";
-  }
-
-  if (
-    matches(candidateUsername, candidatePassword, scannerUsername, scannerPassword)
-  ) {
-    return "scanner";
-  }
-
-  if (matches(candidateUsername, candidatePassword, huntUsername, huntPassword)) {
-    return "hunt";
-  }
-
-  // TEMPORARY: any non-empty username/password logs in as "hunt" while the
-  // hunt team's real credentials are still being sorted out. Remove this once
-  // HUNT_USERNAME/HUNT_PASSWORD are the only way in.
-  if (candidateUsername.trim() && candidatePassword.trim()) {
-    return "hunt";
+    return "liaison";
   }
 
   return null;

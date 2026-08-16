@@ -1,14 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLiaison } from "./store";
+
+const field =
+  "rounded-md border border-fg/20 bg-transparent px-2 py-1 font-mono text-[12px] text-fg focus:border-fg focus:outline-none";
+
+/**
+ * Names are edited locally and saved on blur or Enter. Saving per keystroke
+ * would be one request per character — enough to trip the API rate limit while
+ * someone types a name, and to leave the field fighting the response.
+ */
+function NameInput({
+  value,
+  onCommit,
+  className = "",
+}: {
+  value: string;
+  onCommit: (next: string) => void;
+  className?: string;
+}) {
+  const [draft, setDraft] = useState(value);
+
+  // The server is the source of truth: adopt its value whenever it changes
+  // underneath (a reseed, or another operator's edit arriving on refetch).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync the draft when the saved value changes
+    setDraft(value);
+  }, [value]);
+
+  const commit = () => {
+    if (draft !== value) {
+      onCommit(draft);
+    }
+  };
+
+  return (
+    <input
+      className={`${field} ${className}`}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+        if (e.key === "Escape") setDraft(value);
+      }}
+    />
+  );
+}
 
 export default function HousesView() {
   const { houses, students, updateHouse, updateOG } = useLiaison();
   const [open, setOpen] = useState<string | null>(houses[0]?.id ?? null);
-
-  const field =
-    "rounded-md border border-fg/20 bg-transparent px-2 py-1 font-mono text-[12px] text-fg focus:border-fg focus:outline-none";
 
   return (
     <div>
@@ -49,10 +92,10 @@ export default function HousesView() {
                     <span className="w-28 font-mono text-[10px] uppercase tracking-[0.16em] text-fg/45">
                       OL (Head)
                     </span>
-                    <input
-                      className={`${field} flex-1`}
+                    <NameInput
+                      className="flex-1"
                       value={h.ol}
-                      onChange={(e) => updateHouse(h.id, { ol: e.target.value })}
+                      onCommit={(ol) => updateHouse(h.id, { ol })}
                     />
                   </label>
 
@@ -65,10 +108,10 @@ export default function HousesView() {
                             {h.name} {og.group}
                             {gm.length > 0 && <span className="ml-2 text-fg/60">· {gm.length}</span>}
                           </p>
-                          <input
-                            className={`${field} mt-1.5 w-full`}
+                          <NameInput
+                            className="mt-1.5 w-full"
                             value={og.name}
-                            onChange={(e) => updateOG(h.id, og.id, e.target.value)}
+                            onCommit={(name) => updateOG(h.id, og.id, name)}
                           />
                         </div>
                       );
