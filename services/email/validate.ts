@@ -3,14 +3,18 @@ import "server-only";
 import { NextResponse } from "next/server";
 
 import { readJson } from "@/lib/request";
+import { randomUUID } from "crypto";
+
 import {
   EmailValidationError,
+  MAX_ATTACHMENT_BYTES,
   MAX_BODY,
   MAX_CELL,
   MAX_COLUMNS,
   MAX_RECIPIENTS,
   MAX_SHEET_BYTES,
   MAX_SUBJECT,
+  type AttachmentUpload,
   type Recipient,
   type SheetInput,
   type SkippedRow,
@@ -140,6 +144,29 @@ export function parseDraftInput(body: Record<string, unknown>): {
   }
 
   return { subject, body: content };
+}
+
+export async function parseAttachmentUpload(value: unknown): Promise<AttachmentUpload> {
+  if (!(value instanceof File) || value.size === 0) {
+    throw new EmailValidationError("Attach a file");
+  }
+
+  if (value.size > MAX_ATTACHMENT_BYTES) {
+    throw new EmailValidationError(
+      `An attachment must be under ${Math.floor(MAX_ATTACHMENT_BYTES / 1_000_000)} MB`
+    );
+  }
+
+  const name = value.name.replace(/[\\/]/g, "").trim().slice(0, 150) || "attachment";
+  const buffer = Buffer.from(await value.arrayBuffer());
+
+  return {
+    id: randomUUID(),
+    name,
+    contentType: value.type || "application/octet-stream",
+    size: value.size,
+    contentBytes: buffer.toString("base64"),
+  };
 }
 
 export async function readEmailJsonBody(request: Request): Promise<Record<string, unknown>> {

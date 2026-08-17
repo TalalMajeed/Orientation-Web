@@ -3,7 +3,7 @@ import "server-only";
 import { randomUUID } from "crypto";
 
 import { getMongoDb } from "@/lib/mongo";
-import { isTransientMailError, sendMail } from "@/services/email/graph";
+import { isTransientMailError, sendMail, type MailAttachment } from "@/services/email/graph";
 import { renderBodyHtml, renderSubject } from "@/services/email/template";
 
 const COLLECTION_NAME = "email_campaigns";
@@ -17,6 +17,8 @@ export const MAX_SUBJECT = 300;
 export const MAX_BODY = 20000;
 export const MAX_CELL = 300;
 export const MAX_SHEET_BYTES = 6_000_000;
+export const MAX_ATTACHMENTS = 5;
+export const MAX_ATTACHMENT_BYTES = 3_000_000;
 
 const MAX_SKIPPED_STORED = 500;
 const MAX_FAILURES_STORED = 500;
@@ -47,6 +49,17 @@ export interface Failure {
   error: string;
 }
 
+export interface Attachment {
+  id: string;
+  name: string;
+  contentType: string;
+  size: number;
+}
+
+export interface AttachmentUpload extends Attachment {
+  contentBytes: string;
+}
+
 export interface Campaign {
   fileName: string;
   columns: string[];
@@ -54,6 +67,7 @@ export interface Campaign {
   skipped: SkippedRow[];
   subject: string;
   body: string;
+  attachments: Attachment[];
   status: CampaignStatus;
   total: number;
   cursor: number;
@@ -65,10 +79,14 @@ export interface Campaign {
   finishedAt: number | null;
 }
 
-export type Progress = Omit<Campaign, "fileName" | "columns" | "recipients" | "skipped">;
+export type Progress = Omit<
+  Campaign,
+  "fileName" | "columns" | "recipients" | "skipped" | "attachments"
+>;
 
-interface CampaignDoc extends Campaign {
+interface CampaignDoc extends Omit<Campaign, "attachments"> {
   _id: string;
+  attachments: AttachmentUpload[];
   runId: string | null;
   cancelRequested: boolean;
   heartbeatAt: Date | null;
@@ -96,6 +114,7 @@ function emptyCampaign(): Campaign {
     skipped: [],
     subject: "",
     body: "",
+    attachments: [],
     status: "draft",
     total: 0,
     cursor: 0,
@@ -105,6 +124,16 @@ function emptyCampaign(): Campaign {
     error: null,
     startedAt: null,
     finishedAt: null,
+  };
+}
+
+function insertDefaults(): Omit<CampaignDoc, "_id" | "updatedAt"> {
+  return {
+    ...emptyCampaign(),
+    attachments: [] as AttachmentUpload[],
+    runId: null,
+    cancelRequested: false,
+    heartbeatAt: null,
   };
 }
 
@@ -128,6 +157,12 @@ function toCampaign(doc: CampaignDoc | null): Campaign {
     skipped: doc.skipped ?? empty.skipped,
     subject: doc.subject ?? empty.subject,
     body: doc.body ?? empty.body,
+    attachments: (doc.attachments ?? []).map(({ id, name, contentType, size }) => ({
+      id,
+      name,
+      contentType,
+      size,
+    })),
     status: doc.status ?? empty.status,
     total: doc.total ?? empty.total,
     cursor: doc.cursor ?? empty.cursor,
@@ -177,7 +212,9 @@ function errorMessage(error: unknown): string {
 export async function readCampaign(): Promise<Campaign> {
   const docs = await collection();
 
-  return toCampaign(await docs.findOne({ _id: CAMPAIGN_ID }));
+  return toCampaign(
+    await docs.findOne({ _id: CAMPAIGN_ID }, { projection: { "attachments.contentBytes": 0 } })
+  );
 }
 
 async function readControl(): Promise<CampaignDoc | null> {
@@ -185,7 +222,7 @@ async function readControl(): Promise<CampaignDoc | null> {
 
   return docs.findOne(
     { _id: CAMPAIGN_ID },
-    { projection: { recipients: 0, skipped: 0, failures: 0 } }
+    { projection: { recipients: 0, skipped: 0, failures: 0, "attachments.contentBytes": 0 } }
   );
 }
 
@@ -224,7 +261,7 @@ export async function saveSheet(input: SheetInput): Promise<Campaign> {
         finishedAt: null,
         updatedAt: new Date(),
       },
-      $setOnInsert: { subject: "", body: "" },
+      $setOnInsert: { subject: "", body: "", attachments: [] },
     },
     { upsert: true }
   );
@@ -236,21 +273,77 @@ export async function saveDraft(subject: string, body: string): Promise<Progress
   await assertNotRunning();
 
   const docs = await collection();
-  const defaults = emptyCampaign();
+  const defaults = insertDefaults();
 
-  delete (defaults as Partial<Campaign>).subject;
-  delete (defaults as Partial<Campaign>).body;
+  delete (defaults as Partial<CampaignDoc>).subject;
+  delete (defaults as Partial<CampaignDoc>).body;
 
   await docs.updateOne(
     { _id: CAMPAIGN_ID },
-    {
-      $set: { subject, body, updatedAt: new Date() },
-      $setOnInsert: { ...defaults, runId: null, cancelRequested: false, heartbeatAt: null },
-    },
+    { $set: { subject, body, updatedAt: new Date() }, $setOnInsert: defaults },
     { upsert: true }
   );
 
   return readProgress();
+}
+
+export async function addAttachment(upload: AttachmentUpload): Promise<Campaign> {
+  await assertNotRunning();
+
+  const existing = (await readControl())?.attachments ?? [];
+
+  if (existing.length >= MAX_ATTACHMENTS) {
+    throw new EmailValidationError(`Up to ${MAX_ATTACHMENTS} attachments per email`);
+  }
+
+  const used = existing.reduce((bytes, attachment) => bytes + attachment.size, 0);
+
+  if (used + upload.size > MAX_ATTACHMENT_BYTES) {
+    throw new EmailValidationError(
+      `Attachments must total under ${Math.floor(MAX_ATTACHMENT_BYTES / 1_000_000)} MB`
+    );
+  }
+
+  const docs = await collection();
+  const defaults = insertDefaults();
+
+  delete (defaults as Partial<CampaignDoc>).attachments;
+
+  await docs.updateOne(
+    { _id: CAMPAIGN_ID },
+    {
+      $push: { attachments: upload },
+      $set: { updatedAt: new Date() },
+      $setOnInsert: defaults,
+    },
+    { upsert: true }
+  );
+
+  return readCampaign();
+}
+
+export async function removeAttachment(id: string): Promise<Campaign> {
+  await assertNotRunning();
+
+  const docs = await collection();
+
+  await docs.updateOne(
+    { _id: CAMPAIGN_ID },
+    { $pull: { attachments: { id } }, $set: { updatedAt: new Date() } }
+  );
+
+  return readCampaign();
+}
+
+async function readAttachments(): Promise<MailAttachment[]> {
+  const docs = await collection();
+  const doc = await docs.findOne({ _id: CAMPAIGN_ID }, { projection: { attachments: 1 } });
+
+  return (doc?.attachments ?? []).map(({ name, contentType, contentBytes }) => ({
+    name,
+    contentType,
+    contentBytes,
+  }));
 }
 
 export async function clearCampaign(): Promise<Campaign> {
@@ -337,7 +430,7 @@ export async function readProgress(): Promise<Progress> {
   const docs = await collection();
   const doc = await docs.findOne(
     { _id: CAMPAIGN_ID },
-    { projection: { recipients: 0, skipped: 0 } }
+    { projection: { recipients: 0, skipped: 0, attachments: 0 } }
   );
 
   if (doc?.status === "running" && doc.runId && isAbandoned(doc)) {
@@ -372,7 +465,8 @@ async function finishRun(
 async function deliver(
   recipient: Recipient,
   subject: string,
-  body: string
+  body: string,
+  attachments: MailAttachment[]
 ): Promise<string | null> {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     try {
@@ -382,6 +476,7 @@ async function deliver(
         subject: renderSubject(subject, recipient.values),
         body: renderBodyHtml(body, recipient.values),
         contentType: "HTML",
+        attachments,
       });
 
       return null;
@@ -407,13 +502,19 @@ async function runDispatch(runId: string): Promise<void> {
 
   try {
     const docs = await collection();
+    const attachments = await readAttachments();
     let cursor = -1;
     let consecutiveFailures = 0;
 
     for (;;) {
       const doc = await docs.findOne(
         { _id: CAMPAIGN_ID },
-        { projection: { recipients: { $slice: [Math.max(cursor, 0), 1] } } }
+        {
+          projection: {
+            recipients: { $slice: [Math.max(cursor, 0), 1] },
+            "attachments.contentBytes": 0,
+          },
+        }
       );
 
       if (!doc || doc.runId !== runId || doc.status !== "running") {
@@ -442,7 +543,7 @@ async function runDispatch(runId: string): Promise<void> {
         return;
       }
 
-      const failure = await deliver(recipient, doc.subject, doc.body);
+      const failure = await deliver(recipient, doc.subject, doc.body, attachments);
 
       const advanced = await docs.updateOne(
         { _id: CAMPAIGN_ID, runId, cursor },

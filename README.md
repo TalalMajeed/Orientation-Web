@@ -156,9 +156,10 @@ Every route is mapped in [`docs/site-structure.md`](docs/site-structure.md).
   endpoint answers with the whole workspace, so the client replaces its state
   instead of merging. The **Emails** tab sends a personalized blast from
   `info@orientation.nust.edu.pk`: upload a list whose first column is the
-  address, write a subject and body using `{column_name}` variables, then
-  dispatch. The run belongs to the server, so the progress bar, the cancel
-  button and resume-where-it-stopped all survive a refresh.
+  address, write a subject and body using `{column_name}` variables, attach
+  any files that should ride along, then dispatch. The run belongs to the
+  server, so the progress bar, the cancel button and resume-where-it-stopped
+  all survive a refresh.
 - **`/hr`** (admin) — create, edit and delete short invite links served from
   `/invite/<code>`.
 

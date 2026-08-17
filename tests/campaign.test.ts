@@ -3,7 +3,14 @@ jest.mock("server-only", () => ({}), { virtual: true });
 import { MongoClient } from "mongodb";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
-type SentMail = { from?: string; to: string; subject: string; body: string };
+type SentAttachment = { name: string; contentType: string; contentBytes: string };
+type SentMail = {
+  from?: string;
+  to: string;
+  subject: string;
+  body: string;
+  attachments?: SentAttachment[];
+};
 type CampaignModule = typeof import("@/services/email/campaign");
 
 const sent: SentMail[] = [];
@@ -158,6 +165,59 @@ describe("bulk email dispatch", () => {
       "two@example.com",
       "three@example.com",
     ]);
+  });
+
+  it("sends the same attachments with every email", async () => {
+    await campaign.saveSheet(sheet);
+    await campaign.saveDraft("Subject", "Body");
+    await campaign.addAttachment({
+      id: "att-1",
+      name: "handbook.pdf",
+      contentType: "application/pdf",
+      size: 8,
+      contentBytes: "aGFuZGJvb2s=",
+    });
+
+    const stored = await campaign.readCampaign();
+
+    expect(stored.attachments).toEqual([
+      { id: "att-1", name: "handbook.pdf", contentType: "application/pdf", size: 8 },
+    ]);
+    expect(stored.attachments[0]).not.toHaveProperty("contentBytes");
+
+    await campaign.startDispatch();
+    await settle();
+
+    expect(sent).toHaveLength(3);
+    for (const mail of sent) {
+      expect(mail.attachments).toEqual([
+        { name: "handbook.pdf", contentType: "application/pdf", contentBytes: "aGFuZGJvb2s=" },
+      ]);
+    }
+  });
+
+  it("removes an attachment and caps the total size", async () => {
+    await campaign.addAttachment({
+      id: "att-1",
+      name: "a.pdf",
+      contentType: "application/pdf",
+      size: 2_900_000,
+      contentBytes: "AA==",
+    });
+
+    await expect(
+      campaign.addAttachment({
+        id: "att-2",
+        name: "b.pdf",
+        contentType: "application/pdf",
+        size: 500_000,
+        contentBytes: "AA==",
+      })
+    ).rejects.toThrow("must total under");
+
+    const after = await campaign.removeAttachment("att-1");
+
+    expect(after.attachments).toEqual([]);
   });
 
   it("refuses to dispatch without a list, subject or body", async () => {

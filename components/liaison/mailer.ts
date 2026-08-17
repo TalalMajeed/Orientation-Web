@@ -43,11 +43,19 @@ export interface CampaignProgress {
   finishedAt: number | null;
 }
 
+export interface CampaignAttachment {
+  id: string;
+  name: string;
+  contentType: string;
+  size: number;
+}
+
 export interface Campaign extends CampaignProgress {
   fileName: string;
   columns: string[];
   recipients: MailRecipient[];
   skipped: MailSkippedRow[];
+  attachments: CampaignAttachment[];
 }
 
 const cell = (value: unknown) => (value == null ? "" : String(value)).trim();

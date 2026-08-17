@@ -42,7 +42,7 @@ const api = async (path, init = {}) => {
   const response = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(typeof init.body === "string" ? { "Content-Type": "application/json" } : {}),
       ...(cookie ? { cookie } : {}),
       "x-forwarded-for": "192.0.2.50",
     },
@@ -196,6 +196,20 @@ try {
     r.body.campaign.body.includes("{og_house}") && r.body.campaign.recipients.length === 2
   );
 
+  const attachment = new FormData();
+  attachment.append("file", new File(["handbook"], "handbook.pdf", { type: "application/pdf" }));
+
+  r = await api("/api/v1/liaison/email/attachments", { method: "POST", body: attachment });
+  const attached = r.body.campaign?.attachments?.[0];
+  check(
+    "an attachment uploads without leaking its bytes",
+    r.status === 200 &&
+      attached?.name === "handbook.pdf" &&
+      attached?.size === 8 &&
+      attached.contentBytes === undefined,
+    JSON.stringify(r.body.error ?? attached ?? "")
+  );
+
   r = await api("/api/v1/liaison/email/dispatch", { method: "POST" });
   check("dispatch starts", r.status === 202 && r.body.progress.status === "running");
 
@@ -209,6 +223,12 @@ try {
     progress.status !== "running" && progress.sent + progress.failed === 2,
     `${progress.status} · ${progress.sent} sent · ${progress.failed} failed`
   );
+
+  r = await api("/api/v1/liaison/email/attachments", {
+    method: "DELETE",
+    body: JSON.stringify({ id: attached?.id }),
+  });
+  check("an attachment can be removed", r.status === 200 && r.body.campaign.attachments.length === 0);
 
   r = await api("/api/v1/liaison/email", { method: "DELETE" });
   check("clearing the campaign empties it", r.status === 200 && r.body.campaign.total === 0);

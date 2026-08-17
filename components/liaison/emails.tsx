@@ -14,6 +14,13 @@ const API = "/api/v1/liaison/email";
 const PAGE_SIZE = 50;
 const POLL_MS = 2000;
 const AUTOSAVE_MS = 800;
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_MB = 3;
+
+const formatSize = (bytes: number) =>
+  bytes >= 1_000_000
+    ? `${(bytes / 1_000_000).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(bytes / 1000))} KB`;
 
 const PILL =
   "rounded-full border-2 border-dotted px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors disabled:opacity-30";
@@ -29,6 +36,7 @@ const EMPTY: Campaign = {
   skipped: [],
   subject: "",
   body: "",
+  attachments: [],
   status: "draft",
   total: 0,
   cursor: 0,
@@ -50,6 +58,7 @@ const STATUS_LABEL: Record<Campaign["status"], string> = {
 
 export default function EmailsView() {
   const fileRef = useRef<HTMLInputElement>(null);
+  const attachmentRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   const [campaign, setCampaign] = useState<Campaign>(EMPTY);
@@ -153,7 +162,7 @@ export default function EmailsView() {
     try {
       const response = await fetch(path, {
         ...init,
-        headers: init.body ? { "Content-Type": "application/json" } : undefined,
+        headers: typeof init.body === "string" ? { "Content-Type": "application/json" } : undefined,
       });
       const data = await response.json().catch(() => ({}));
 
@@ -217,6 +226,33 @@ export default function EmailsView() {
     if (data?.campaign) {
       applyCampaign(data.campaign as Campaign);
       setPage(1);
+    }
+  };
+
+  const attach = async (file: File) => {
+    const form = new FormData();
+
+    form.append("file", file);
+
+    const data = await call(`${API}/attachments`, { method: "POST", body: form });
+
+    if (data?.campaign) {
+      applyCampaign({ ...(data.campaign as Campaign), subject, body });
+    }
+
+    if (attachmentRef.current) {
+      attachmentRef.current.value = "";
+    }
+  };
+
+  const detach = async (id: string) => {
+    const data = await call(`${API}/attachments`, {
+      method: "DELETE",
+      body: JSON.stringify({ id }),
+    });
+
+    if (data?.campaign) {
+      applyCampaign({ ...(data.campaign as Campaign), subject, body });
     }
   };
 
@@ -392,7 +428,7 @@ export default function EmailsView() {
             rows={12}
             maxLength={20000}
             placeholder={"Hi {name},\n\nYour orientation house is {og_house}. See you on campus."}
-            className={`mt-2 ${FIELD} resize-y leading-relaxed`}
+            className={`mt-2 ${FIELD} resize-none leading-relaxed`}
           />
         </label>
 
@@ -401,6 +437,51 @@ export default function EmailsView() {
             No column for {unknown.map((name) => `{${name}}`).join(", ")} — these render empty.
           </p>
         )}
+
+        <div>
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg/50">
+            Attachments — optional
+          </span>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              ref={attachmentRef}
+              type="file"
+              className="hidden"
+              onChange={(event) => event.target.files?.[0] && attach(event.target.files[0])}
+            />
+            <button
+              type="button"
+              onClick={() => attachmentRef.current?.click()}
+              disabled={running || busy || campaign.attachments.length >= MAX_ATTACHMENTS}
+              className={`${PILL} ${PILL_OFF}`}
+            >
+              Add file
+            </button>
+            {campaign.attachments.map((attachment) => (
+              <span
+                key={attachment.id}
+                className="flex items-center gap-2 rounded-full border border-fg/25 py-1 pl-3 pr-1 font-mono text-[11px] text-fg/70"
+              >
+                {attachment.name}
+                <span className="text-fg/40">{formatSize(attachment.size)}</span>
+                <button
+                  type="button"
+                  onClick={() => detach(attachment.id)}
+                  disabled={running || busy}
+                  aria-label={`Remove ${attachment.name}`}
+                  className="rounded-full px-2 text-fg/50 transition-colors hover:text-danger disabled:opacity-30"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {campaign.attachments.length === 0 && (
+              <span className="font-mono text-[11px] text-fg/40">
+                Sent with every email · up to {MAX_ATTACHMENTS} files, {MAX_ATTACHMENT_MB} MB total
+              </span>
+            )}
+          </div>
+        </div>
 
         {sample && (subject || body) && (
           <div>

@@ -63,6 +63,12 @@ function getGraphClient(): Client {
   });
 }
 
+export interface MailAttachment {
+  name: string;
+  contentType: string;
+  contentBytes: string;
+}
+
 export interface SendMailOptions {
   to: string | string[];
   subject: string;
@@ -70,6 +76,7 @@ export interface SendMailOptions {
   contentType?: "Text" | "HTML";
   replyTo?: string;
   from?: string;
+  attachments?: MailAttachment[];
 }
 
 export function isTransientMailError(error: unknown): boolean {
@@ -85,6 +92,7 @@ export async function sendMail({
   contentType = "HTML",
   replyTo,
   from,
+  attachments,
 }: SendMailOptions): Promise<void> {
   const sender = from ?? process.env.MS_GRAPH_SENDER;
 
@@ -104,6 +112,16 @@ export async function sendMail({
       body: { contentType, content: body },
       toRecipients: recipients,
       ...(replyTo ? { replyTo: [{ emailAddress: { address: replyTo } }] } : {}),
+      ...(attachments?.length
+        ? {
+            attachments: attachments.map((attachment) => ({
+              "@odata.type": "#microsoft.graph.fileAttachment",
+              name: attachment.name,
+              contentType: attachment.contentType,
+              contentBytes: attachment.contentBytes,
+            })),
+          }
+        : {}),
     },
     saveToSentItems: true,
   });
