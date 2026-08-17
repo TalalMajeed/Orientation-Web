@@ -407,7 +407,7 @@ export default function EmailsView() {
             <button
               type="button"
               onClick={() => setShowPreview((shown) => !shown)}
-              className="font-mono text-[11px] uppercase tracking-[0.1em] text-sky underline decoration-dotted"
+              className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg/70 underline decoration-dotted transition-colors hover:text-fg"
             >
               {showPreview ? "Hide preview" : `Preview for ${sample.email}`}
             </button>
