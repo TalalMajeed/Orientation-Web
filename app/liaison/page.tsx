@@ -10,6 +10,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "houses", label: "OG Houses" },
   { id: "students", label: "Students" },
   { id: "allocation", label: "Allocation" },
+  { id: "emails", label: "Emails" },
 ];
 
 export default function LiaisonPage() {

@@ -37,13 +37,13 @@ components/
   site/                    Site-wide UI: chrome, nav, theme, consent, gate, sky, logo, ellipse
   section/                 Landing sections: hero, welcome, schedule, events, contact, form, legal, footer
   campus/                  Campus map: landmarks (data), view (Leaflet), explorer (filters + map)
-  liaison/                 Liaison workspace: overview, houses, students, allocation, store, sheet, labels
+  liaison/                 Liaison workspace: overview, houses, students, allocation, emails, store, sheet, mailer, labels
   hr/                      Invite-link manager
 
 services/                  Server-side logic (never imported by client code)
   auth/                    session signing + role guard
   contact/                 contact-form validation + email body
-  email/                   Microsoft Graph app-only mailer
+  email/                   Microsoft Graph app-only mailer, bulk campaign runner, templating
   liaison/                 db, allocate, seed, validate, respond, types
   hr/  newsletter/         short links, newsletter subscribers
   security/                headers (CSP etc.), limit (rate limiter)
@@ -154,7 +154,11 @@ Every route is mapped in [`docs/site-structure.md`](docs/site-structure.md).
   one-click allocation across houses and OG groups, balanced by gender and
   school. State is a single MongoDB document; every `/api/v1/liaison/*`
   endpoint answers with the whole workspace, so the client replaces its state
-  instead of merging.
+  instead of merging. The **Emails** tab sends a personalized blast from
+  `info@orientation.nust.edu.pk`: upload a list whose first column is the
+  address, write a subject and body using `{column_name}` variables, then
+  dispatch. The run belongs to the server, so the progress bar, the cancel
+  button and resume-where-it-stopped all survive a refresh.
 - **`/hr`** (admin) — create, edit and delete short invite links served from
   `/invite/<code>`.
 

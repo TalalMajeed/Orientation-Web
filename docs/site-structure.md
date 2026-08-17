@@ -30,7 +30,7 @@ landing page uses the hero's own top bar instead.
 | Panel | Entry point | Who signs in | What it does |
 |---|---|---|---|
 | **Admin hub** | `/admin` | anyone | Directory of the panels below — not a login form. |
-| **Liaison** | `/login?next=/liaison` → `/liaison` | OG team (`LIAISON_USERNAME` / `LIAISON_PASSWORD`) or admin | Manage the 10 OG houses and their OGs, upload or generate a batch, auto-divide it across houses and groups (gender + school balanced), review and export. |
+| **Liaison** | `/login?next=/liaison` → `/liaison` | OG team (`LIAISON_USERNAME` / `LIAISON_PASSWORD`) or admin | Manage the 10 OG houses and their OGs, upload or generate a batch, auto-divide it across houses and groups (gender + school balanced), review and export. The **Emails** tab sends a personalized blast to an uploaded list from `info@orientation.nust.edu.pk`. |
 | **HR** | `/login?next=/hr` → `/hr` | admin (`HR_USERNAME` / `HR_PASSWORD`) | Create, edit and delete short invite links (`/invite/<code>`). |
 
 `/hr/login` and `/liaison/login` are permanent aliases that redirect to the
@@ -79,6 +79,13 @@ GET    /api/v1/liaison/students       The roster + parse log
 PUT    /api/v1/liaison/students       Replace the roster (an upload is a new batch)
 POST   /api/v1/liaison/allocation     Divide the batch (optional {students} seeds it first)
 DELETE /api/v1/liaison/allocation     Clear assignments, keep the roster
+GET    /api/v1/liaison/email          The campaign: list, columns, draft, progress
+PUT    /api/v1/liaison/email          Replace the mailing list (resets progress)
+PATCH  /api/v1/liaison/email          Autosave the subject and body
+DELETE /api/v1/liaison/email          Clear the campaign
+POST   /api/v1/liaison/email/dispatch Start (or resume) sending
+DELETE /api/v1/liaison/email/dispatch Cancel the run
+GET    /api/v1/liaison/email/progress Counters only — what the progress bar polls
 ```
 
 Workbooks are parsed in the browser (`components/liaison/sheet.ts`, cell values
@@ -86,6 +93,41 @@ only), and every field is re-validated server-side in
 `services/liaison/validate.ts`. Allocation itself runs on the server
 (`services/liaison/allocate.ts`) so the rule that decides which student lands
 where cannot be edited in devtools.
+
+### Bulk email (Emails tab)
+
+One campaign at a time, stored as a single `email_campaigns` document and sent
+from `info@orientation.nust.edu.pk` through the same app-only Graph client as
+the contact form. Notes that are not obvious from the code:
+
+- **The run lives on the server, not in the tab.** `POST .../dispatch` writes
+  `status: "running"` plus a `runId` and returns immediately; the loop in
+  `services/email/campaign.ts` advances a `cursor` in the document after every
+  message. A refresh, a second browser or a closed laptop therefore all see the
+  same progress bar — the client only polls `/progress`.
+- **The cursor is the lock.** Each advance is
+  `updateOne({ _id, runId, cursor }, { $inc: sent|failed, $set: { cursor: n+1 } })`,
+  so two loops racing over one campaign cannot double-send a recipient: the
+  loser matches nothing and re-reads.
+- **Cancel is cooperative.** It sets `cancelRequested`; the loop notices before
+  the next send. A run whose `heartbeatAt` has gone stale (a restart mid-send)
+  is picked up again by the next `/progress` poll, or ended by cancel if nobody
+  is left to observe the flag.
+- **Cancelled or failed runs resume from the cursor** rather than restarting, so
+  a stopped blast never re-mails the people who already received it. Clearing
+  the campaign (or uploading a new list) is what starts from zero.
+- **First column is always the address.** Every header — including that first
+  one — is lowercased, stripped of punctuation and joined with underscores to
+  become a `{variable}`: "Hostellite/ Day Scholar" is `{hostellite_day_scholar}`.
+  Rows whose first cell is not an address, and repeat addresses, are skipped and
+  listed rather than silently dropped.
+- **Both template and values are HTML-escaped** before `\n` becomes `<br />`, so
+  a spreadsheet cell cannot inject markup into someone else's email. Unknown
+  placeholders render empty and are flagged in the composer before dispatch.
+- **Pacing.** One message every `EMAIL_SEND_INTERVAL_MS` (default 2000, which
+  keeps the mailbox under Graph's ~30/minute throttle), three attempts on
+  transient 429/503/504, and the whole run stops after 25 consecutive failures
+  rather than burning a list against a mailbox that is refusing everything.
 
 ### Other endpoints
 

@@ -69,6 +69,7 @@ export interface SendMailOptions {
   body: string;
   contentType?: "Text" | "HTML";
   replyTo?: string;
+  from?: string;
 }
 
 export function isTransientMailError(error: unknown): boolean {
@@ -83,8 +84,9 @@ export async function sendMail({
   body,
   contentType = "HTML",
   replyTo,
+  from,
 }: SendMailOptions): Promise<void> {
-  const sender = process.env.MS_GRAPH_SENDER;
+  const sender = from ?? process.env.MS_GRAPH_SENDER;
 
   if (!sender) {
     throw new Error("Missing required environment variable: MS_GRAPH_SENDER");

@@ -22,6 +22,7 @@ const server = spawn("npx", ["next", "start", "-p", String(PORT)], {
     HR_SESSION_SECRET: "s3cret",
     LIAISON_USERNAME: "og",
     LIAISON_PASSWORD: "ogpass",
+    EMAIL_SEND_INTERVAL_MS: "1",
   },
   stdio: "ignore",
 });
@@ -58,6 +59,9 @@ const api = async (path, init = {}) => {
 try {
   let r = await api("/api/v1/liaison/state");
   check("state without a session is 401", r.status === 401);
+
+  r = await api("/api/v1/liaison/email");
+  check("emails without a session is 401", r.status === 401);
 
   r = await api("/api/v1/auth/login", {
     method: "POST",
@@ -146,6 +150,68 @@ try {
 
   r = await api("/api/v1/liaison/state", { method: "DELETE" });
   check("clear all empties the roster", r.body.state.students.length === 0);
+
+  // --- emails -----------------------------------------------------------
+  const mailSheet = {
+    fileName: "list.xlsx",
+    columns: ["email_id", "name", "og_house"],
+    recipients: [
+      {
+        email: "one@example.com",
+        values: { email_id: "one@example.com", name: "Amal", og_house: "Khiljis" },
+      },
+      {
+        email: "two@example.com",
+        values: { email_id: "two@example.com", name: "Bilal", og_house: "Romans" },
+      },
+    ],
+    skipped: [{ row: 4, value: "Ayela Shahid", reason: "Not a valid email address" }],
+  };
+
+  r = await api("/api/v1/liaison/email", { method: "PUT", body: JSON.stringify(mailSheet) });
+  check(
+    "mailing list uploads",
+    r.status === 200 && r.body.campaign.total === 2 && r.body.campaign.skipped.length === 1,
+    JSON.stringify(r.body.error ?? "")
+  );
+
+  r = await api("/api/v1/liaison/email", {
+    method: "PUT",
+    body: JSON.stringify({ ...mailSheet, recipients: [{ email: "Amal Imdad", values: {} }] }),
+  });
+  check("a non-email first column is rejected", r.status === 400);
+
+  r = await api("/api/v1/liaison/email/dispatch", { method: "POST" });
+  check("dispatch without a subject is refused", r.status === 400, JSON.stringify(r.body));
+
+  r = await api("/api/v1/liaison/email", {
+    method: "PATCH",
+    body: JSON.stringify({ subject: "Welcome {name}", body: "Hi {name}, you are in {og_house}." }),
+  });
+  check("composer draft saves", r.status === 200 && r.body.progress.subject === "Welcome {name}");
+
+  r = await api("/api/v1/liaison/email");
+  check(
+    "draft and list survive a reload",
+    r.body.campaign.body.includes("{og_house}") && r.body.campaign.recipients.length === 2
+  );
+
+  r = await api("/api/v1/liaison/email/dispatch", { method: "POST" });
+  check("dispatch starts", r.status === 202 && r.body.progress.status === "running");
+
+  let progress = r.body.progress;
+  for (let i = 0; i < 100 && progress.status === "running"; i++) {
+    await sleep(100);
+    progress = (await api("/api/v1/liaison/email/progress")).body.progress;
+  }
+  check(
+    "every recipient is accounted for",
+    progress.status !== "running" && progress.sent + progress.failed === 2,
+    `${progress.status} · ${progress.sent} sent · ${progress.failed} failed`
+  );
+
+  r = await api("/api/v1/liaison/email", { method: "DELETE" });
+  check("clearing the campaign empties it", r.status === 200 && r.body.campaign.total === 0);
 
   r = await api("/api/v1/hr/links");
   check("liaison cannot read HR links", r.status === 401);
