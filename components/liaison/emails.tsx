@@ -460,7 +460,7 @@ export default function EmailsView() {
             {campaign.attachments.map((attachment) => (
               <span
                 key={attachment.id}
-                className="flex items-center gap-2 rounded-full border border-fg/25 py-1 pl-3 pr-1 font-mono text-[11px] text-fg/70"
+                className="flex items-center gap-2 rounded-full border border-fg/25 py-0.5 pl-3 pr-0.5 font-mono text-[11px] text-fg/70"
               >
                 {attachment.name}
                 <span className="text-fg/40">{formatSize(attachment.size)}</span>
@@ -469,7 +469,7 @@ export default function EmailsView() {
                   onClick={() => detach(attachment.id)}
                   disabled={running || busy}
                   aria-label={`Remove ${attachment.name}`}
-                  className="rounded-full px-2 text-fg/50 transition-colors hover:text-danger disabled:opacity-30"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[14px] leading-none text-fg/50 transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-30"
                 >
                   ×
                 </button>
