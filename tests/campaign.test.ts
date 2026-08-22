@@ -243,4 +243,81 @@ describe("bulk email dispatch", () => {
     expect(stored.skipped).toHaveLength(1);
     expect(stored.status).toBe("draft");
   });
+
+  it("sends html bodies as authored, with the values escaped", async () => {
+    await campaign.saveSheet({
+      ...sheet,
+      recipients: [{ email: "one@example.com", values: { email_id: "one@example.com", name: "<b>Amal</b>" } }],
+    });
+    await campaign.saveDraft("Hello", "<p>Hi <i>{name}</i></p>", "html");
+    await campaign.startDispatch();
+
+    const progress = await settle();
+
+    expect(progress.status).toBe("completed");
+    expect(sent[0].body).toBe("<p>Hi <i>&lt;b&gt;Amal&lt;/b&gt;</i></p>");
+  });
+
+  it("stores the body format with the draft", async () => {
+    await campaign.saveDraft("Subject", "<p>Body</p>", "html");
+
+    expect((await campaign.readCampaign()).format).toBe("html");
+
+    await campaign.saveDraft("Subject", "Body");
+
+    expect((await campaign.readCampaign()).format).toBe("text");
+  });
+
+  it("sends a test email using the first matching recipient", async () => {
+    await campaign.saveSheet(sheet);
+    await campaign.saveDraft("Hello {name}", "Hi {name}.");
+
+    const sentTo = await campaign.sendTest({
+      email: "TWO@example.com",
+      subject: "Hello {name}",
+      body: "Hi {name}.",
+      format: "text",
+    });
+
+    expect(sentTo).toBe("two@example.com");
+    expect(sent).toHaveLength(1);
+    expect(sent[0].subject).toBe("Hello Bilal");
+    expect(sent[0].body).toContain("Hi Bilal.");
+  });
+
+  it("falls back to the first recipient for an address outside the list", async () => {
+    await campaign.saveSheet(sheet);
+
+    await campaign.sendTest({
+      email: "reviewer@example.com",
+      subject: "Hello {name}",
+      body: "<p>{name}</p>",
+      format: "html",
+    });
+
+    expect(sent[0].to).toBe("reviewer@example.com");
+    expect(sent[0].body).toBe("<p>Amal</p>");
+  });
+
+  it("refuses a test without an address, subject or body", async () => {
+    await expect(
+      campaign.sendTest({ email: "nope", subject: "S", body: "B", format: "text" })
+    ).rejects.toThrow("valid email address");
+
+    await expect(
+      campaign.sendTest({ email: "one@example.com", subject: " ", body: "B", format: "text" })
+    ).rejects.toThrow("subject is required");
+
+    await expect(
+      campaign.sendTest({ email: "one@example.com", subject: "S", body: " ", format: "text" })
+    ).rejects.toThrow("body is required");
+  });
+
+  it("reports a failed test send as a validation error", async () => {
+    failFor = new Set(["one@example.com"]);
+
+    await expect(
+      campaign.sendTest({ email: "one@example.com", subject: "S", body: "B", format: "text" })
+    ).rejects.toThrow("Could not send the test");
+  });
 });

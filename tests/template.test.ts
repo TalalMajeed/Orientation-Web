@@ -4,7 +4,9 @@ import {
   normalizeColumnName,
   normalizeColumnNames,
   renderBodyHtml,
+  renderBodyMarkup,
   renderBodyText,
+  renderEmailHtml,
   renderSubject,
   unknownPlaceholders,
 } from "@/services/email/template";
@@ -59,6 +61,17 @@ describe("templating", () => {
     expect(html).toContain("&lt;script&gt;x&lt;/script&gt;");
     expect(html).not.toContain("<script>");
     expect(html).toContain("<br />");
+  });
+
+  it("keeps html templates intact but escapes what fills them", () => {
+    const html = renderBodyMarkup("<p>Hi <b>{name}</b></p>", { name: "<script>x</script>" });
+
+    expect(html).toBe("<p>Hi <b>&lt;script&gt;x&lt;/script&gt;</b></p>");
+  });
+
+  it("picks the renderer from the body format", () => {
+    expect(renderEmailHtml("html", "<p>{name}</p>", values)).toBe("<p>Amal Imdad</p>");
+    expect(renderEmailHtml("text", "<p>{name}</p>", values)).toContain("&lt;p&gt;");
   });
 
   it("lists each placeholder once, in order", () => {

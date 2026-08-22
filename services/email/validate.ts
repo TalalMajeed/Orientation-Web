@@ -19,7 +19,12 @@ import {
   type SheetInput,
   type SkippedRow,
 } from "@/services/email/campaign";
-import { EMAIL_PATTERN, normalizeColumnName } from "@/services/email/template";
+import {
+  EMAIL_PATTERN,
+  isBodyFormat,
+  normalizeColumnName,
+  type BodyFormat,
+} from "@/services/email/template";
 
 const MAX_FILENAME = 200;
 const MAX_SKIPPED = 500;
@@ -131,6 +136,7 @@ export function parseSheetInput(body: Record<string, unknown>): SheetInput {
 export function parseDraftInput(body: Record<string, unknown>): {
   subject: string;
   body: string;
+  format: BodyFormat;
 } {
   const subject = typeof body.subject === "string" ? body.subject.replace(/\s+/g, " ").trim() : "";
   const content = typeof body.body === "string" ? body.body : "";
@@ -143,7 +149,27 @@ export function parseDraftInput(body: Record<string, unknown>): {
     throw new EmailValidationError(`The body must be ${MAX_BODY} characters or fewer`);
   }
 
-  return { subject, body: content };
+  return {
+    subject,
+    body: content,
+    format: isBodyFormat(body.format) ? body.format : "text",
+  };
+}
+
+export function parseTestInput(body: Record<string, unknown>): {
+  email: string;
+  subject: string;
+  body: string;
+  format: BodyFormat;
+} {
+  const draft = parseDraftInput(body);
+  const email = cell(body.email).toLowerCase();
+
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new EmailValidationError("Enter a valid email address for the test");
+  }
+
+  return { email, ...draft };
 }
 
 export async function parseAttachmentUpload(value: unknown): Promise<AttachmentUpload> {

@@ -5,10 +5,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MailSheetError,
   readMailList,
+  type BodyFormat,
   type Campaign,
   type CampaignProgress,
 } from "@/components/liaison/mailer";
-import { renderBodyText, renderSubject, unknownPlaceholders } from "@/services/email/template";
+import {
+  EMAIL_PATTERN,
+  renderBodyMarkup,
+  renderBodyText,
+  renderSubject,
+  unknownPlaceholders,
+} from "@/services/email/template";
 
 const API = "/api/v1/liaison/email";
 const PAGE_SIZE = 50;
@@ -29,6 +36,9 @@ const PILL_OFF = "border-fg/40 text-fg hover:border-fg";
 const FIELD =
   "w-full rounded-2xl border-2 border-dotted border-fg/30 bg-transparent px-4 py-3 font-mono text-[13px] text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none disabled:opacity-50";
 
+const PREVIEW_FRAME =
+  '<!doctype html><html><head><meta charset="utf-8" /><style>html,body{margin:0;padding:16px;background:#ffffff;color:#132647;font-family:Segoe UI,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;}img{max-width:100%;}</style></head><body>';
+
 const EMPTY: Campaign = {
   fileName: "",
   columns: [],
@@ -36,6 +46,7 @@ const EMPTY: Campaign = {
   skipped: [],
   subject: "",
   body: "",
+  format: "text",
   attachments: [],
   status: "draft",
   total: 0,
@@ -65,6 +76,9 @@ export default function EmailsView() {
   const [sender, setSender] = useState("info@orientation.nust.edu.pk");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [format, setFormat] = useState<BodyFormat>("text");
+  const [testAddress, setTestAddress] = useState("");
+  const [testNotice, setTestNotice] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +93,7 @@ export default function EmailsView() {
     setCampaign(next);
     setSubject(next.subject);
     setBody(next.body);
+    setFormat(next.format ?? "text");
   }, []);
 
   useEffect(() => {
@@ -133,7 +148,7 @@ export default function EmailsView() {
       return;
     }
 
-    if (subject === campaign.subject && body === campaign.body) {
+    if (subject === campaign.subject && body === campaign.body && format === campaign.format) {
       return;
     }
 
@@ -141,7 +156,7 @@ export default function EmailsView() {
       void fetch(API, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, body }),
+        body: JSON.stringify({ subject, body, format }),
       })
         .then((response) => (response.ok ? response.json() : null))
         .then((data) => {
@@ -153,7 +168,7 @@ export default function EmailsView() {
     }, AUTOSAVE_MS);
 
     return () => clearTimeout(timer);
-  }, [subject, body, loaded, running, campaign.subject, campaign.body]);
+  }, [subject, body, format, loaded, running, campaign.subject, campaign.body, campaign.format]);
 
   const call = async (path: string, init: RequestInit): Promise<Record<string, unknown> | null> => {
     setBusy(true);
@@ -189,7 +204,7 @@ export default function EmailsView() {
       const data = await call(API, { method: "PUT", body: JSON.stringify(list) });
 
       if (data?.campaign) {
-        applyCampaign({ ...(data.campaign as Campaign), subject, body });
+        applyCampaign({ ...(data.campaign as Campaign), subject, body, format });
         setPage(1);
       }
     } catch (readError) {
@@ -201,6 +216,19 @@ export default function EmailsView() {
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const sendTest = async () => {
+    setTestNotice(null);
+
+    const data = await call(`${API}/test`, {
+      method: "POST",
+      body: JSON.stringify({ email: testAddress.trim(), subject, body, format }),
+    });
+
+    if (data?.sentTo) {
+      setTestNotice(`Test sent to ${data.sentTo as string}`);
     }
   };
 
@@ -237,7 +265,7 @@ export default function EmailsView() {
     const data = await call(`${API}/attachments`, { method: "POST", body: form });
 
     if (data?.campaign) {
-      applyCampaign({ ...(data.campaign as Campaign), subject, body });
+      applyCampaign({ ...(data.campaign as Campaign), subject, body, format });
     }
 
     if (attachmentRef.current) {
@@ -252,7 +280,7 @@ export default function EmailsView() {
     });
 
     if (data?.campaign) {
-      applyCampaign({ ...(data.campaign as Campaign), subject, body });
+      applyCampaign({ ...(data.campaign as Campaign), subject, body, format });
     }
   };
 
@@ -281,6 +309,7 @@ export default function EmailsView() {
   );
 
   const sample = campaign.recipients[0];
+  const sampleValues = sample?.values ?? {};
   const totalPages = Math.max(1, Math.ceil(campaign.recipients.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * PAGE_SIZE;
@@ -295,6 +324,8 @@ export default function EmailsView() {
   const exhausted = campaign.total > 0 && campaign.cursor >= campaign.total;
   const canDispatch =
     !running && campaign.total > 0 && !exhausted && subject.trim() !== "" && body.trim() !== "";
+  const canTest =
+    subject.trim() !== "" && body.trim() !== "" && EMAIL_PATTERN.test(testAddress.trim());
 
   if (!loaded) {
     return (
@@ -416,10 +447,25 @@ export default function EmailsView() {
           </div>
         )}
 
-        <label className="block">
-          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg/50">
-            Message
-          </span>
+        <div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg/50">
+              Message
+            </span>
+            <div className="flex gap-2">
+              {(["text", "html"] as BodyFormat[]).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setFormat(option)}
+                  disabled={running}
+                  className={`${PILL} ${format === option ? PILL_ON : PILL_OFF}`}
+                >
+                  {option === "text" ? "Text" : "HTML"}
+                </button>
+              ))}
+            </div>
+          </div>
           <textarea
             ref={bodyRef}
             value={body}
@@ -427,10 +473,20 @@ export default function EmailsView() {
             disabled={running}
             rows={12}
             maxLength={20000}
-            placeholder={"Hi {name},\n\nYour orientation house is {og_house}. See you on campus."}
+            spellCheck={format === "text"}
+            placeholder={
+              format === "html"
+                ? '<p>Hi {name},</p>\n<p>Your orientation house is <b>{og_house}</b>.</p>'
+                : "Hi {name},\n\nYour orientation house is {og_house}. See you on campus."
+            }
             className={`mt-2 ${FIELD} resize-none leading-relaxed`}
           />
-        </label>
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-fg/40">
+            {format === "html"
+              ? "Your markup is sent as-is · variables are escaped before they land in it"
+              : "Plain text · line breaks become paragraphs in the sent email"}
+          </p>
+        </div>
 
         {unknown.length > 0 && (
           <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-danger">
@@ -483,14 +539,14 @@ export default function EmailsView() {
           </div>
         </div>
 
-        {sample && (subject || body) && (
+        {(subject || body) && (
           <div>
             <button
               type="button"
               onClick={() => setShowPreview((shown) => !shown)}
               className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg/70 underline decoration-dotted transition-colors hover:text-fg"
             >
-              {showPreview ? "Hide preview" : `Preview for ${sample.email}`}
+              {showPreview ? "Hide preview" : sample ? `Preview for ${sample.email}` : "Preview"}
             </button>
             {showPreview && (
               <div className="mt-3 rounded-2xl border border-fg/12 p-5">
@@ -498,14 +554,23 @@ export default function EmailsView() {
                   Subject
                 </p>
                 <p className="mt-1 font-mono text-[13px] text-fg">
-                  {renderSubject(subject, sample.values) || "—"}
+                  {renderSubject(subject, sampleValues) || "—"}
                 </p>
                 <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.16em] text-fg/45">
                   Body
                 </p>
-                <p className="mt-1 whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-fg/80">
-                  {renderBodyText(body, sample.values) || "—"}
-                </p>
+                {format === "html" ? (
+                  <iframe
+                    title="HTML email preview"
+                    sandbox=""
+                    srcDoc={`${PREVIEW_FRAME}${renderBodyMarkup(body, sampleValues)}</body></html>`}
+                    className="mt-2 h-[420px] w-full rounded-xl border border-fg/12 bg-white"
+                  />
+                ) : (
+                  <p className="mt-1 whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-fg/80">
+                    {renderBodyText(body, sampleValues) || "—"}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -546,6 +611,33 @@ export default function EmailsView() {
               </button>
             )}
           </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dashed border-fg/15 pt-4">
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg/40">
+            Test first:
+          </span>
+          <input
+            type="email"
+            value={testAddress}
+            onChange={(event) => setTestAddress(event.target.value)}
+            placeholder="you@nust.edu.pk"
+            aria-label="Test email address"
+            className="w-64 rounded-full border-2 border-dotted border-fg/30 bg-transparent px-4 py-1.5 font-mono text-[12px] text-fg placeholder:text-fg/30 focus:border-fg focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={sendTest}
+            disabled={!canTest || busy}
+            className={`${PILL} ${PILL_OFF}`}
+          >
+            Send test
+          </button>
+          {testNotice && (
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg/60">
+              {testNotice}
+            </span>
+          )}
         </div>
 
         <div

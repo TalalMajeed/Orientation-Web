@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest) {
     const draft = parseDraftInput(body);
 
     return NextResponse.json(
-      { progress: await saveDraft(draft.subject, draft.body) },
+      { progress: await saveDraft(draft.subject, draft.body, draft.format) },
       { status: 200 }
     );
   } catch (error) {

@@ -11,7 +11,7 @@ const CSP_DIRECTIVES = [
   "default-src 'self'",
   SCRIPT_SRC,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${CARTO_TILES}`,
+  `img-src 'self' data: blob: https: ${CARTO_TILES}`,
   "font-src 'self' data:",
   "media-src 'self'",
   `connect-src 'self' ${CARTO_TILES}`,
@@ -20,7 +20,7 @@ const CSP_DIRECTIVES = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  "frame-src 'none'",
+  "frame-src 'self'",
 ];
 
 export const SECURITY_HEADERS: Record<string, string> = {

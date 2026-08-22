@@ -1,6 +1,10 @@
 import * as XLSX from "xlsx";
 
-import { EMAIL_PATTERN, normalizeColumnNames } from "@/services/email/template";
+import {
+  EMAIL_PATTERN,
+  normalizeColumnNames,
+  type BodyFormat,
+} from "@/services/email/template";
 
 export interface MailRecipient {
   email: string;
@@ -24,6 +28,8 @@ export class MailSheetError extends Error {}
 
 export type CampaignStatus = "draft" | "running" | "cancelled" | "completed" | "failed";
 
+export type { BodyFormat };
+
 export interface CampaignFailure {
   email: string;
   error: string;
@@ -32,6 +38,7 @@ export interface CampaignFailure {
 export interface CampaignProgress {
   subject: string;
   body: string;
+  format: BodyFormat;
   status: CampaignStatus;
   total: number;
   cursor: number;

@@ -157,9 +157,12 @@ Every route is mapped in [`docs/site-structure.md`](docs/site-structure.md).
   instead of merging. The **Emails** tab sends a personalized blast from
   `info@orientation.nust.edu.pk`: upload a list whose first column is the
   address, write a subject and body using `{column_name}` variables, attach
-  any files that should ride along, then dispatch. The run belongs to the
-  server, so the progress bar, the cancel button and resume-where-it-stopped
-  all survive a refresh. The **Accounts** tab belongs to the `LIAISON_USERNAME`
+  any files that should ride along, then dispatch. The body is either **Text**
+  (line breaks become `<br />`) or **HTML** (your markup is sent as authored,
+  with substituted values escaped); the preview renders HTML in a sandboxed
+  frame, and **Send test** delivers one copy to any address using the first
+  matching recipient's values. The run belongs to the server, so the progress
+  bar, the cancel button and resume-where-it-stopped all survive a refresh. The **Accounts** tab belongs to the `LIAISON_USERNAME`
   superadmin alone: it creates member logins (stored salted and scrypt-hashed in
   `liaison_accounts`) that may write in **Emails** and read everything else.
 - **`/hr`** (admin) — create, edit and delete short invite links served from

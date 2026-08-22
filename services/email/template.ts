@@ -2,6 +2,14 @@ export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const PLACEHOLDER = /\{([a-z0-9_]+)\}/g;
 
+export type BodyFormat = "text" | "html";
+
+export const BODY_FORMATS: BodyFormat[] = ["text", "html"];
+
+export function isBodyFormat(candidate: unknown): candidate is BodyFormat {
+  return typeof candidate === "string" && (BODY_FORMATS as string[]).includes(candidate);
+}
+
 export function normalizeColumnName(raw: string): string {
   return String(raw ?? "")
     .toLowerCase()
@@ -74,4 +82,18 @@ export function renderBodyHtml(template: string, values: Record<string, string>)
 
 export function renderBodyText(template: string, values: Record<string, string>): string {
   return substitute(template, values, (value) => value);
+}
+
+export function renderBodyMarkup(template: string, values: Record<string, string>): string {
+  return substitute(template, values, (value) => escapeHtml(value));
+}
+
+export function renderEmailHtml(
+  format: BodyFormat,
+  template: string,
+  values: Record<string, string>
+): string {
+  return format === "html"
+    ? renderBodyMarkup(template, values)
+    : renderBodyHtml(template, values);
 }

@@ -195,6 +195,50 @@ try {
     "draft and list survive a reload",
     r.body.campaign.body.includes("{og_house}") && r.body.campaign.recipients.length === 2
   );
+  check("a draft defaults to the text format", r.body.campaign.format === "text");
+
+  r = await api("/api/v1/liaison/email", {
+    method: "PATCH",
+    body: JSON.stringify({
+      subject: "Welcome {name}",
+      body: "<p>Hi <b>{name}</b></p>",
+      format: "html",
+    }),
+  });
+  check("the html format saves", r.status === 200 && r.body.progress.format === "html");
+
+  r = await api("/api/v1/liaison/email/test", {
+    method: "POST",
+    body: JSON.stringify({ email: "not-an-email", subject: "S", body: "B", format: "text" }),
+  });
+  check("a test needs a valid address", r.status === 400);
+
+  r = await api("/api/v1/liaison/email/test", {
+    method: "POST",
+    body: JSON.stringify({ email: "reviewer@example.com", subject: " ", body: "B" }),
+  });
+  check("a test needs a subject", r.status === 400 && /subject/i.test(r.body.error));
+
+  r = await api("/api/v1/liaison/email/test", {
+    method: "POST",
+    body: JSON.stringify({
+      email: "reviewer@example.com",
+      subject: "Welcome {name}",
+      body: "<p>Hi {name}</p>",
+      format: "html",
+    }),
+  });
+  check(
+    "a test reaches the mailer",
+    r.status === 400 && /could not send the test/i.test(r.body.error),
+    JSON.stringify(r.body)
+  );
+
+  r = await api("/api/v1/liaison/email", {
+    method: "PATCH",
+    body: JSON.stringify({ subject: "Welcome {name}", body: "Hi {name}, you are in {og_house}." }),
+  });
+  check("switching back to text saves", r.body.progress.format === "text");
 
   const attachment = new FormData();
   attachment.append("file", new File(["handbook"], "handbook.pdf", { type: "application/pdf" }));

@@ -4,7 +4,12 @@ import { randomUUID } from "crypto";
 
 import { getMongoDb } from "@/lib/mongo";
 import { isTransientMailError, sendMail, type MailAttachment } from "@/services/email/graph";
-import { renderBodyHtml, renderSubject } from "@/services/email/template";
+import {
+  EMAIL_PATTERN,
+  renderEmailHtml,
+  renderSubject,
+  type BodyFormat,
+} from "@/services/email/template";
 
 const COLLECTION_NAME = "email_campaigns";
 const CAMPAIGN_ID = "current";
@@ -67,6 +72,7 @@ export interface Campaign {
   skipped: SkippedRow[];
   subject: string;
   body: string;
+  format: BodyFormat;
   attachments: Attachment[];
   status: CampaignStatus;
   total: number;
@@ -114,6 +120,7 @@ function emptyCampaign(): Campaign {
     skipped: [],
     subject: "",
     body: "",
+    format: "text",
     attachments: [],
     status: "draft",
     total: 0,
@@ -157,6 +164,7 @@ function toCampaign(doc: CampaignDoc | null): Campaign {
     skipped: doc.skipped ?? empty.skipped,
     subject: doc.subject ?? empty.subject,
     body: doc.body ?? empty.body,
+    format: doc.format ?? empty.format,
     attachments: (doc.attachments ?? []).map(({ id, name, contentType, size }) => ({
       id,
       name,
@@ -179,6 +187,7 @@ function toProgress(campaign: Campaign): Progress {
   return {
     subject: campaign.subject,
     body: campaign.body,
+    format: campaign.format,
     status: campaign.status,
     total: campaign.total,
     cursor: campaign.cursor,
@@ -261,7 +270,7 @@ export async function saveSheet(input: SheetInput): Promise<Campaign> {
         finishedAt: null,
         updatedAt: new Date(),
       },
-      $setOnInsert: { subject: "", body: "", attachments: [] },
+      $setOnInsert: { subject: "", body: "", format: "text" as BodyFormat, attachments: [] },
     },
     { upsert: true }
   );
@@ -269,7 +278,11 @@ export async function saveSheet(input: SheetInput): Promise<Campaign> {
   return readCampaign();
 }
 
-export async function saveDraft(subject: string, body: string): Promise<Progress> {
+export async function saveDraft(
+  subject: string,
+  body: string,
+  format: BodyFormat = "text"
+): Promise<Progress> {
   await assertNotRunning();
 
   const docs = await collection();
@@ -277,10 +290,11 @@ export async function saveDraft(subject: string, body: string): Promise<Progress
 
   delete (defaults as Partial<CampaignDoc>).subject;
   delete (defaults as Partial<CampaignDoc>).body;
+  delete (defaults as Partial<CampaignDoc>).format;
 
   await docs.updateOne(
     { _id: CAMPAIGN_ID },
-    { $set: { subject, body, updatedAt: new Date() }, $setOnInsert: defaults },
+    { $set: { subject, body, format, updatedAt: new Date() }, $setOnInsert: defaults },
     { upsert: true }
   );
 
@@ -354,6 +368,63 @@ export async function clearCampaign(): Promise<Campaign> {
   await docs.deleteOne({ _id: CAMPAIGN_ID });
 
   return emptyCampaign();
+}
+
+async function sampleValues(email: string): Promise<Record<string, string>> {
+  const docs = await collection();
+  const matched = await docs.findOne(
+    { _id: CAMPAIGN_ID },
+    { projection: { recipients: { $elemMatch: { email } } } }
+  );
+
+  if (matched?.recipients?.length) {
+    return matched.recipients[0].values;
+  }
+
+  const first = await docs.findOne(
+    { _id: CAMPAIGN_ID },
+    { projection: { recipients: { $slice: 1 } } }
+  );
+
+  return first?.recipients?.[0]?.values ?? {};
+}
+
+export async function sendTest(input: {
+  email: string;
+  subject: string;
+  body: string;
+  format: BodyFormat;
+}): Promise<string> {
+  const email = input.email.trim().toLowerCase();
+
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new EmailValidationError("Enter a valid email address for the test");
+  }
+
+  if (!input.subject.trim()) {
+    throw new EmailValidationError("A subject is required");
+  }
+
+  if (!input.body.trim()) {
+    throw new EmailValidationError("An email body is required");
+  }
+
+  const values = await sampleValues(email);
+
+  try {
+    await sendMail({
+      from: CAMPAIGN_SENDER,
+      to: email,
+      subject: renderSubject(input.subject, values),
+      body: renderEmailHtml(input.format, input.body, values),
+      contentType: "HTML",
+      attachments: await readAttachments(),
+    });
+  } catch (error) {
+    throw new EmailValidationError(`Could not send the test — ${errorMessage(error)}`);
+  }
+
+  return email;
 }
 
 export async function startDispatch(): Promise<Progress> {
@@ -466,6 +537,7 @@ async function deliver(
   recipient: Recipient,
   subject: string,
   body: string,
+  format: BodyFormat,
   attachments: MailAttachment[]
 ): Promise<string | null> {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
@@ -474,7 +546,7 @@ async function deliver(
         from: CAMPAIGN_SENDER,
         to: recipient.email,
         subject: renderSubject(subject, recipient.values),
-        body: renderBodyHtml(body, recipient.values),
+        body: renderEmailHtml(format, body, recipient.values),
         contentType: "HTML",
         attachments,
       });
@@ -543,7 +615,13 @@ async function runDispatch(runId: string): Promise<void> {
         return;
       }
 
-      const failure = await deliver(recipient, doc.subject, doc.body, attachments);
+      const failure = await deliver(
+        recipient,
+        doc.subject,
+        doc.body,
+        doc.format ?? "text",
+        attachments
+      );
 
       const advanced = await docs.updateOne(
         { _id: CAMPAIGN_ID, runId, cursor },
