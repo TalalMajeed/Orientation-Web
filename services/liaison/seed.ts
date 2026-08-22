@@ -10,10 +10,9 @@ const HOUSES: { name: string; color: string }[] = [
   { name: "Samurai", color: "#E58A4E" },
   { name: "Seljuks", color: "#1B3155" },
   { name: "Mughals", color: "#B8860B" },
-  { name: "Achaeans", color: "#4FB49A" },
 ];
 
-const OGS_PER_HOUSE = 9;
+const OGS_PER_HOUSE = 7;
 
 export function seedHouses(): House[] {
   return HOUSES.map((house, houseIndex) => ({

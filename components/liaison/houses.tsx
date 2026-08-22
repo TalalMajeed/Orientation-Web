@@ -50,7 +50,7 @@ export default function HousesView() {
     <div>
       <h2 className="font-serif text-5xl font-bold text-fg">OG Houses</h2>
       <p className="mt-3 max-w-xl font-mono text-[12px] uppercase leading-relaxed tracking-[0.08em] text-fg/50">
-        Ten houses, each led by an OL and split into OG groups (e.g. Vikings&nbsp;1–9). Edit names
+        Nine houses, each led by an OL and split into OG groups (e.g. Vikings&nbsp;1–7). Edit names
         inline. Member counts appear after allocation.
       </p>
 

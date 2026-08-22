@@ -14,9 +14,10 @@ const PILL_ON = "border-transparent bg-fg text-surface";
 const PILL_OFF = "border-fg/40 text-fg hover:border-fg";
 
 export default function StudentsView() {
-  const { students, houses, log, setUpload } = useLiaison();
+  const { students, houses, log, setUpload, clearAll } = useLiaison();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [demoCount, setDemoCount] = useState(300);
   const [gender, setGender] = useState<"all" | "male" | "female">("all");
   const [department, setDepartment] = useState("all");
@@ -73,6 +74,20 @@ export default function StudentsView() {
     }
   };
 
+  const resetEverything = async () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      return;
+    }
+
+    setConfirmReset(false);
+    setGender("all");
+    setDepartment("all");
+    setQuery("");
+    setShowLog(false);
+    await clearAll();
+  };
+
   const duplicates = log.filter((entry) => entry.type === "duplicate").length;
   const incomplete = log.filter((entry) => entry.type === "incomplete").length;
 
@@ -81,6 +96,18 @@ export default function StudentsView() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h2 className="font-serif text-5xl font-bold text-fg">Students</h2>
         <div className="flex flex-wrap gap-2">
+          <button
+            onClick={resetEverything}
+            onBlur={() => setConfirmReset(false)}
+            title="Wipes students, allocation and house edits, then re-seeds the default houses"
+            className={`${PILL} ${
+              confirmReset
+                ? "border-transparent bg-danger text-cream"
+                : "border-danger/50 text-danger hover:border-danger"
+            }`}
+          >
+            {confirmReset ? "Confirm reset?" : "Reset all"}
+          </button>
           <input
             ref={fileRef}
             type="file"
