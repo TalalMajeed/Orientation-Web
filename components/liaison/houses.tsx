@@ -10,10 +10,12 @@ function NameInput({
   value,
   onCommit,
   className = "",
+  readOnly = false,
 }: {
   value: string;
   onCommit: (next: string) => void;
   className?: string;
+  readOnly?: boolean;
 }) {
   const [draft, setDraft] = useState(value);
 
@@ -30,8 +32,9 @@ function NameInput({
 
   return (
     <input
-      className={`${FIELD} ${className}`}
+      className={`${FIELD} ${className} ${readOnly ? "cursor-default text-fg/60" : ""}`}
       value={draft}
+      readOnly={readOnly}
       onChange={(event) => setDraft(event.target.value)}
       onBlur={commit}
       onKeyDown={(event) => {
@@ -43,7 +46,7 @@ function NameInput({
 }
 
 export default function HousesView() {
-  const { houses, students, updateHouse, updateOg } = useLiaison();
+  const { houses, students, updateHouse, updateOg, canWrite } = useLiaison();
   const [open, setOpen] = useState<string | null>(houses[0]?.id ?? null);
 
   return (
@@ -89,6 +92,7 @@ export default function HousesView() {
                     <NameInput
                       className="flex-1"
                       value={house.ol}
+                      readOnly={!canWrite}
                       onCommit={(ol) => updateHouse(house.id, { ol })}
                     />
                   </label>
@@ -108,6 +112,7 @@ export default function HousesView() {
                           <NameInput
                             className="mt-1.5 w-full"
                             value={og.name}
+                            readOnly={!canWrite}
                             onCommit={(name) => updateOg(house.id, og.id, name)}
                           />
                         </div>

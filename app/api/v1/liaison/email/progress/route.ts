@@ -4,7 +4,7 @@ import { requireRole } from "@/services/auth/guard";
 import { readProgress } from "@/services/email/campaign";
 
 export async function GET(request: NextRequest) {
-  const denied = requireRole(request, "liaison", "admin");
+  const denied = requireRole(request, "liaison", "admin", "member");
 
   if (denied) {
     return denied;

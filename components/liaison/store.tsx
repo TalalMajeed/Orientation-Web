@@ -10,10 +10,16 @@ import {
 } from "react";
 import type { Config, House, LiaisonState, LogEntry, Student } from "@/components/liaison/types";
 
+export type WorkspaceRole = "admin" | "liaison" | "member";
+
 type LiaisonStore = LiaisonState & {
   loaded: boolean;
   error: string | null;
   busy: boolean;
+  role: WorkspaceRole | null;
+  username: string;
+  canWrite: boolean;
+  canManageAccounts: boolean;
   setUpload: (students: Student[], log: LogEntry[]) => Promise<void>;
   runAllocation: () => Promise<void>;
   loadDemoAndAllocate: (students: Student[]) => Promise<void>;
@@ -39,6 +45,9 @@ const LiaisonContext = createContext<LiaisonStore | null>(null);
 
 export function LiaisonProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<LiaisonState>(EMPTY_STATE);
+  const [session, setSession] = useState<{ role: WorkspaceRole; username: string } | null>(
+    null
+  );
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,15 +79,32 @@ export function LiaisonProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void send("/state").finally(() => setLoaded(true));
+    const load = async () => {
+      const response = await fetch("/api/v1/auth/session").catch(() => null);
+      const data = response ? await response.json().catch(() => ({})) : {};
+
+      if (data.session) {
+        setSession(data.session as { role: WorkspaceRole; username: string });
+      }
+
+      await send("/state");
+      setLoaded(true);
+    };
+
+    void load();
   }, [send]);
+
+  const role = session?.role ?? null;
 
   const store: LiaisonStore = {
     ...state,
     loaded,
     busy,
     error,
+    role,
+    username: session?.username ?? "",
+    canWrite: role !== null && role !== "member",
+    canManageAccounts: role === "liaison",
     setUpload: (students, log) =>
       send("/students", { method: "PUT", body: JSON.stringify({ students, log }) }),
     runAllocation: () => send("/allocation", { method: "POST" }),

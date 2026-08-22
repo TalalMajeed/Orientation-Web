@@ -37,11 +37,11 @@ components/
   site/                    Site-wide UI: chrome, nav, theme, consent, gate, sky, logo, ellipse
   section/                 Landing sections: hero, welcome, schedule, events, contact, form, legal, footer
   campus/                  Campus map: landmarks (data), view (Leaflet), explorer (filters + map)
-  liaison/                 Liaison workspace: overview, houses, students, allocation, emails, store, sheet, mailer, labels
+  liaison/                 Liaison workspace: shell, overview, houses, students, allocation, emails, accounts, store, sheet, mailer, labels
   hr/                      Invite-link manager
 
 services/                  Server-side logic (never imported by client code)
-  auth/                    session signing + role guard
+  auth/                    session signing, role guard, member accounts
   contact/                 contact-form validation + email body
   email/                   Microsoft Graph app-only mailer, bulk campaign runner, templating
   liaison/                 db, allocate, seed, validate, respond, types
@@ -77,7 +77,7 @@ npx next dev         # website-only: no env needed
 | `MONGO_DB_URI` | database (liaison workspace, HR links, newsletter) |
 | `HR_USERNAME`, `HR_PASSWORD` | admin login |
 | `HR_SESSION_SECRET` | session cookie signing |
-| `LIAISON_USERNAME`, `LIAISON_PASSWORD` | liaison login (OG team) |
+| `LIAISON_USERNAME`, `LIAISON_PASSWORD` | liaison superadmin login (OG team) |
 | `TENANT_ID`, `CLIENT_ID`, `CLIENT_SECRET` | Microsoft Graph app registration (contact form email) |
 | `MS_GRAPH_SENDER` | mailbox the app sends *as* — must be inside the Exchange ApplicationAccessPolicy |
 | `SECRETS_KEY` | `esecrets` / `npm run secrets` pipeline |
@@ -150,7 +150,7 @@ concurrent submissions of the same address.
 Every route is mapped in [`docs/site-structure.md`](docs/site-structure.md).
 
 - **`/admin`** — portal directory; each entry links to the shared staff login.
-- **`/liaison`** (liaison or admin) — OG houses, merit-list upload, and
+- **`/liaison`** (liaison, admin or member) — OG houses, merit-list upload, and
   one-click allocation across houses and OG groups, balanced by gender and
   school. State is a single MongoDB document; every `/api/v1/liaison/*`
   endpoint answers with the whole workspace, so the client replaces its state
@@ -159,7 +159,9 @@ Every route is mapped in [`docs/site-structure.md`](docs/site-structure.md).
   address, write a subject and body using `{column_name}` variables, attach
   any files that should ride along, then dispatch. The run belongs to the
   server, so the progress bar, the cancel button and resume-where-it-stopped
-  all survive a refresh.
+  all survive a refresh. The **Accounts** tab belongs to the `LIAISON_USERNAME`
+  superadmin alone: it creates member logins (stored salted and scrypt-hashed in
+  `liaison_accounts`) that may write in **Emails** and read everything else.
 - **`/hr`** (admin) — create, edit and delete short invite links served from
   `/invite/<code>`.
 

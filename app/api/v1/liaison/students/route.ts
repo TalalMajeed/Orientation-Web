@@ -6,7 +6,7 @@ import { stateResponse, validationError } from "@/services/liaison/respond";
 import { parseLog, parseStudents, readJsonBody } from "@/services/liaison/validate";
 
 export async function GET(request: NextRequest) {
-  const denied = requireRole(request, "liaison", "admin");
+  const denied = requireRole(request, "liaison", "admin", "member");
 
   if (denied) {
     return denied;

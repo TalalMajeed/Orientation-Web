@@ -9,14 +9,15 @@ dotenv.config();
 const SESSION_COOKIE_NAME = "hr_session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 
-export type StaffRole = "admin" | "liaison";
+export type StaffRole = "admin" | "liaison" | "member";
 
 export interface StaffSession {
   role: StaffRole;
+  username: string;
   expiresAt: number;
 }
 
-const ROLES: StaffRole[] = ["admin", "liaison"];
+const ROLES: StaffRole[] = ["admin", "liaison", "member"];
 
 function isStaffRole(candidate: string): candidate is StaffRole {
   return (ROLES as string[]).includes(candidate);
@@ -87,9 +88,15 @@ export function verifyCredentials(
   return null;
 }
 
-export function createSessionToken(role: StaffRole): string {
+export function isReservedUsername(candidate: string): boolean {
+  const reserved = [process.env.HR_USERNAME, process.env.LIAISON_USERNAME];
+
+  return reserved.some((name) => !!name && name.toLowerCase() === candidate.toLowerCase());
+}
+
+export function createSessionToken(role: StaffRole, username: string): string {
   const expiresAt = Date.now() + SESSION_DURATION_MS;
-  const payload = `${expiresAt}:${role}`;
+  const payload = `${expiresAt}:${role}:${username}`;
 
   return `${payload}.${sign(payload)}`;
 }
@@ -112,7 +119,7 @@ export function verifySessionToken(token: string | undefined | null): StaffSessi
     return null;
   }
 
-  const [rawExpiresAt, rawRole] = payload.split(":");
+  const [rawExpiresAt, rawRole, ...rest] = payload.split(":");
   const expiresAt = Number(rawExpiresAt);
 
   if (!rawRole || !isStaffRole(rawRole)) {
@@ -123,7 +130,7 @@ export function verifySessionToken(token: string | undefined | null): StaffSessi
     return null;
   }
 
-  return { role: rawRole, expiresAt };
+  return { role: rawRole, username: rest.join(":"), expiresAt };
 }
 
 export function getRequestSession(request: NextRequest): StaffSession | null {

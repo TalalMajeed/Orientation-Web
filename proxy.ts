@@ -6,7 +6,7 @@ import { checkRateLimit, type RateLimitRule } from "@/services/security/limit";
 
 const GUARDED: { prefix: string; roles: StaffRole[] }[] = [
   { prefix: "/hr", roles: ["admin"] },
-  { prefix: "/liaison", roles: ["liaison", "admin"] },
+  { prefix: "/liaison", roles: ["liaison", "admin", "member"] },
 ];
 
 const PUBLIC_EXCEPTIONS = ["/hr/login", "/liaison/login"];
@@ -14,6 +14,7 @@ const PUBLIC_EXCEPTIONS = ["/hr/login", "/liaison/login"];
 const LANDING: Record<StaffRole, string> = {
   admin: "/hr",
   liaison: "/liaison",
+  member: "/liaison",
 };
 
 const MINUTE = 60_000;

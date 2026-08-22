@@ -6,11 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 const DEFAULT_LANDING: Record<string, string> = {
   admin: "/hr",
   liaison: "/liaison",
+  member: "/liaison",
 };
 
 const BLOCKED: Record<string, string[]> = {
   admin: [],
   liaison: ["/hr"],
+  member: ["/hr"],
 };
 
 function safeNext(candidate: string | null): string | null {

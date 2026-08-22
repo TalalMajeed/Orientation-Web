@@ -14,7 +14,7 @@ const PILL_ON = "border-transparent bg-fg text-surface";
 const PILL_OFF = "border-fg/40 text-fg hover:border-fg";
 
 export default function StudentsView() {
-  const { students, houses, log, setUpload, clearAll } = useLiaison();
+  const { students, houses, log, setUpload, clearAll, canWrite } = useLiaison();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -96,51 +96,55 @@ export default function StudentsView() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h2 className="font-serif text-5xl font-bold text-fg">Students</h2>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={resetEverything}
-            onBlur={() => setConfirmReset(false)}
-            title="Wipes students, allocation and house edits, then re-seeds the default houses"
-            className={`${PILL} ${
-              confirmReset
-                ? "border-transparent bg-danger text-cream"
-                : "border-danger/50 text-danger hover:border-danger"
-            }`}
-          >
-            {confirmReset ? "Confirm reset?" : "Reset all"}
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,.xlsx,.xls"
-            className="hidden"
-            onChange={(event) => event.target.files?.[0] && readFile(event.target.files[0])}
-          />
-          <button onClick={() => fileRef.current?.click()} className={`${PILL} ${PILL_ON}`}>
-            {busy ? "Reading…" : "Upload merit list"}
-          </button>
-          <span className="flex items-center gap-1.5 rounded-full border-2 border-dotted border-fg/40 py-0.5 pl-4 pr-1">
-            <input
-              type="number"
-              min={1}
-              max={5000}
-              value={demoCount}
-              onChange={(event) =>
-                setDemoCount(Math.max(1, Math.min(5000, Number(event.target.value) || 0)))
-              }
-              className="no-spinner w-14 bg-transparent font-mono text-[11px] text-fg focus:outline-none"
-              aria-label="Number of demo students"
-            />
-            <button
-              onClick={() =>
-                setUpload(makeDemoStudents(demoCount), [
-                  { type: "info", row: null, message: `Loaded ${demoCount} demo students.` },
-                ])
-              }
-              className="rounded-full bg-fg px-3 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-surface transition-colors hover:bg-ember hover:text-cream"
-            >
-              Load demo
-            </button>
-          </span>
+          {canWrite && (
+            <>
+              <button
+                onClick={resetEverything}
+                onBlur={() => setConfirmReset(false)}
+                title="Wipes students, allocation and house edits, then re-seeds the default houses"
+                className={`${PILL} ${
+                  confirmReset
+                    ? "border-transparent bg-danger text-cream"
+                    : "border-danger/50 text-danger hover:border-danger"
+                }`}
+              >
+                {confirmReset ? "Confirm reset?" : "Reset all"}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={(event) => event.target.files?.[0] && readFile(event.target.files[0])}
+              />
+              <button onClick={() => fileRef.current?.click()} className={`${PILL} ${PILL_ON}`}>
+                {busy ? "Reading…" : "Upload merit list"}
+              </button>
+              <span className="flex items-center gap-1.5 rounded-full border-2 border-dotted border-fg/40 py-0.5 pl-4 pr-1">
+                <input
+                  type="number"
+                  min={1}
+                  max={5000}
+                  value={demoCount}
+                  onChange={(event) =>
+                    setDemoCount(Math.max(1, Math.min(5000, Number(event.target.value) || 0)))
+                  }
+                  className="no-spinner w-14 bg-transparent font-mono text-[11px] text-fg focus:outline-none"
+                  aria-label="Number of demo students"
+                />
+                <button
+                  onClick={() =>
+                    setUpload(makeDemoStudents(demoCount), [
+                      { type: "info", row: null, message: `Loaded ${demoCount} demo students.` },
+                    ])
+                  }
+                  className="rounded-full bg-fg px-3 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-surface transition-colors hover:bg-ember hover:text-cream"
+                >
+                  Load demo
+                </button>
+              </span>
+            </>
+          )}
           <button
             onClick={() =>
               downloadRows(

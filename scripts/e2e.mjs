@@ -70,7 +70,7 @@ try {
   check("liaison signs in", r.status === 200 && r.body.role === "liaison", JSON.stringify(r.body));
 
   r = await api("/api/v1/liaison/state");
-  check("state returns 10 seeded houses", r.status === 200 && r.body.state.houses.length === 10);
+  check("state returns 9 seeded houses", r.status === 200 && r.body.state.houses.length === 9);
 
   const students = Array.from({ length: 90 }, (_, i) => ({
     id: `s${i}`,
@@ -136,7 +136,7 @@ try {
 
   r = await api("/api/v1/liaison/allocation", { method: "POST" });
   const placed = r.body.state.students.filter((s) => s.houseId).length;
-  check("capacity is enforced", placed === 50, `placed ${placed}`);
+  check("capacity is enforced", placed === 45, `placed ${placed}`);
   check("overflow is reported", r.body.state.log.some((l) => l.type === "overflow"));
 
   r = await api("/api/v1/liaison/allocation", { method: "DELETE" });
@@ -232,6 +232,93 @@ try {
 
   r = await api("/api/v1/liaison/email", { method: "DELETE" });
   check("clearing the campaign empties it", r.status === 200 && r.body.campaign.total === 0);
+
+  // --- member accounts --------------------------------------------------
+  r = await api("/api/v1/liaison/accounts", {
+    method: "POST",
+    body: JSON.stringify({ username: "og.member", password: "memberpass" }),
+  });
+  check("superadmin creates a member account", r.status === 201, JSON.stringify(r.body));
+
+  r = await api("/api/v1/liaison/accounts", {
+    method: "POST",
+    body: JSON.stringify({ username: "og.member", password: "memberpass" }),
+  });
+  check("duplicate username is 400", r.status === 400);
+
+  r = await api("/api/v1/liaison/accounts", {
+    method: "POST",
+    body: JSON.stringify({ username: "og", password: "memberpass" }),
+  });
+  check("the env username is reserved", r.status === 400);
+
+  r = await api("/api/v1/liaison/accounts", {
+    method: "POST",
+    body: JSON.stringify({ username: "shorty", password: "short" }),
+  });
+  check("a short password is 400", r.status === 400);
+
+  const liaisonCookie = cookie;
+
+  r = await api("/api/v1/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ username: "og.member", password: "memberpass" }),
+  });
+  check("member signs in", r.status === 200 && r.body.role === "member", JSON.stringify(r.body));
+
+  r = await api("/api/v1/auth/session");
+  check(
+    "session reports the member",
+    r.body.session?.role === "member" && r.body.session?.username === "og.member"
+  );
+
+  r = await api("/api/v1/liaison/state");
+  check("member reads the workspace", r.status === 200 && r.body.state.houses.length === 9);
+
+  r = await api("/api/v1/liaison/students", {
+    method: "PUT",
+    body: JSON.stringify({ students: [], log: [] }),
+  });
+  check("member cannot replace the roster", r.status === 401);
+
+  r = await api("/api/v1/liaison/allocation", { method: "POST" });
+  check("member cannot run allocation", r.status === 401);
+
+  r = await api("/api/v1/liaison/state", { method: "DELETE" });
+  check("member cannot wipe the workspace", r.status === 401);
+
+  r = await api("/api/v1/liaison/accounts");
+  check("member cannot list accounts", r.status === 401);
+
+  r = await api("/api/v1/liaison/email");
+  check("member reads the campaign", r.status === 200);
+
+  r = await api("/api/v1/liaison/email", {
+    method: "PATCH",
+    body: JSON.stringify({ subject: "Member subject" }),
+  });
+  check("member writes the campaign", r.status === 200, JSON.stringify(r.body));
+
+  cookie = liaisonCookie;
+
+  r = await api("/api/v1/liaison/accounts/og.member", {
+    method: "PATCH",
+    body: JSON.stringify({ password: "newmemberpass" }),
+  });
+  check("superadmin resets a member password", r.status === 200);
+
+  r = await api("/api/v1/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ username: "og.member", password: "memberpass" }),
+  });
+  check("the old member password stops working", r.status === 401);
+
+  cookie = liaisonCookie;
+
+  r = await api("/api/v1/liaison/accounts/og.member", { method: "DELETE" });
+  check("superadmin deletes the account", r.status === 200 && r.body.accounts.length === 0);
+
+  cookie = liaisonCookie;
 
   r = await api("/api/v1/hr/links");
   check("liaison cannot read HR links", r.status === 401);

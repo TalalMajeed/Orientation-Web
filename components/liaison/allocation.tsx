@@ -19,6 +19,7 @@ export default function AllocationView() {
     loadDemoAndAllocate,
     resetAllocation,
     setConfig,
+    canWrite,
   } = useLiaison();
   const [openHouse, setOpenHouse] = useState<string | null>(null);
   const [demoCount, setDemoCount] = useState(300);
@@ -52,70 +53,76 @@ export default function AllocationView() {
         Each student lands in exactly one house and one group.
       </p>
 
-      <div className="mt-6 rounded-2xl border border-fg/12 bg-fg/[0.02] p-5">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg/40">
-          Divide the batch
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button
-            onClick={runAllocation}
-            disabled={students.length === 0}
-            className="rounded-full border-2 border-transparent bg-ember px-7 py-3 font-mono text-[12px] uppercase tracking-[0.16em] text-cream transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Auto-divide batch
-          </button>
-          <button
-            onClick={resetAllocation}
-            disabled={!allocated}
-            className={`${PILL} ${PILL_GHOST} disabled:opacity-40`}
-          >
-            Reset
-          </button>
-          <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.1em] text-fg/60">
-            House cap
-            <input
-              type="number"
-              min={1}
-              placeholder="auto"
-              value={capDraft}
-              onChange={(event) => setCapDraft(event.target.value)}
-              onBlur={commitCap}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") event.currentTarget.blur();
-              }}
-              className="no-spinner w-20 rounded-md border border-fg/25 bg-transparent px-2 py-1 text-fg focus:border-fg focus:outline-none"
-            />
-          </label>
-          <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg/50">
-            {allocatedCount} / {students.length} allocated
-          </span>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dashed border-fg/15 pt-4">
-          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg/40">
-            No data? Try dummy:
-          </span>
-          <span className="flex items-center gap-1.5 rounded-full border-2 border-dotted border-fg/40 py-0.5 pl-4 pr-1">
-            <input
-              type="number"
-              min={1}
-              max={5000}
-              value={demoCount}
-              onChange={(event) =>
-                setDemoCount(Math.max(1, Math.min(5000, Number(event.target.value) || 0)))
-              }
-              className="no-spinner w-14 bg-transparent font-mono text-[11px] text-fg focus:outline-none"
-              aria-label="Number of dummy students"
-            />
+      {canWrite ? (
+        <div className="mt-6 rounded-2xl border border-fg/12 bg-fg/[0.02] p-5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg/40">
+            Divide the batch
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
-              onClick={() => loadDemoAndAllocate(makeDemoStudents(demoCount))}
-              className="rounded-full bg-fg px-3 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-surface transition-colors hover:bg-ember hover:text-cream"
+              onClick={runAllocation}
+              disabled={students.length === 0}
+              className="rounded-full border-2 border-transparent bg-ember px-7 py-3 font-mono text-[12px] uppercase tracking-[0.16em] text-cream transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Load &amp; divide
+              Auto-divide batch
             </button>
-          </span>
+            <button
+              onClick={resetAllocation}
+              disabled={!allocated}
+              className={`${PILL} ${PILL_GHOST} disabled:opacity-40`}
+            >
+              Reset
+            </button>
+            <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.1em] text-fg/60">
+              House cap
+              <input
+                type="number"
+                min={1}
+                placeholder="auto"
+                value={capDraft}
+                onChange={(event) => setCapDraft(event.target.value)}
+                onBlur={commitCap}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") event.currentTarget.blur();
+                }}
+                className="no-spinner w-20 rounded-md border border-fg/25 bg-transparent px-2 py-1 text-fg focus:border-fg focus:outline-none"
+              />
+            </label>
+            <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-fg/50">
+              {allocatedCount} / {students.length} allocated
+            </span>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dashed border-fg/15 pt-4">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg/40">
+              No data? Try dummy:
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full border-2 border-dotted border-fg/40 py-0.5 pl-4 pr-1">
+              <input
+                type="number"
+                min={1}
+                max={5000}
+                value={demoCount}
+                onChange={(event) =>
+                  setDemoCount(Math.max(1, Math.min(5000, Number(event.target.value) || 0)))
+                }
+                className="no-spinner w-14 bg-transparent font-mono text-[11px] text-fg focus:outline-none"
+                aria-label="Number of dummy students"
+              />
+              <button
+                onClick={() => loadDemoAndAllocate(makeDemoStudents(demoCount))}
+                className="rounded-full bg-fg px-3 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-surface transition-colors hover:bg-ember hover:text-cream"
+              >
+                Load &amp; divide
+              </button>
+            </span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <p className="mt-6 rounded-2xl border border-fg/12 bg-fg/[0.02] px-5 py-4 font-mono text-[11px] uppercase tracking-[0.12em] text-fg/50">
+          {allocatedCount} / {students.length} allocated · read-only view
+        </p>
+      )}
 
       {allocated && (
         <div className="mt-4 flex flex-wrap gap-2">

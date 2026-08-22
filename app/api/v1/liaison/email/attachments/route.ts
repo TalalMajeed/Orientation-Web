@@ -9,7 +9,7 @@ import {
 } from "@/services/email/validate";
 
 export async function POST(request: NextRequest) {
-  const denied = requireRole(request, "liaison", "admin");
+  const denied = requireRole(request, "liaison", "admin", "member");
 
   if (denied) {
     return denied;
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const denied = requireRole(request, "liaison", "admin");
+  const denied = requireRole(request, "liaison", "admin", "member");
 
   if (denied) {
     return denied;

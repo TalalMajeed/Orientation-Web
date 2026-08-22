@@ -16,7 +16,7 @@ import {
 } from "@/services/email/validate";
 
 export async function GET(request: NextRequest) {
-  const denied = requireRole(request, "liaison", "admin");
+  const denied = requireRole(request, "liaison", "admin", "member");
 
   if (denied) {
     return denied;
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const denied = requireRole(request, "liaison", "admin");
+  const denied = requireRole(request, "liaison", "admin", "member");
 
   if (denied) {
     return denied;
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const denied = requireRole(request, "liaison", "admin");
+  const denied = requireRole(request, "liaison", "admin", "member");
 
   if (denied) {
     return denied;
@@ -66,7 +66,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const denied = requireRole(request, "liaison", "admin");
+  const denied = requireRole(request, "liaison", "admin", "member");
 
   if (denied) {
     return denied;

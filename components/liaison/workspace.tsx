@@ -1,5 +1,6 @@
 "use client";
 
+import AccountsView from "@/components/liaison/accounts";
 import AllocationView from "@/components/liaison/allocation";
 import EmailsView from "@/components/liaison/emails";
 import HousesView from "@/components/liaison/houses";
@@ -7,10 +8,16 @@ import Overview from "@/components/liaison/overview";
 import StudentsView from "@/components/liaison/students";
 import { useLiaison } from "@/components/liaison/store";
 
-export type TabId = "overview" | "houses" | "students" | "allocation" | "emails";
+export type TabId =
+  | "overview"
+  | "houses"
+  | "students"
+  | "allocation"
+  | "emails"
+  | "accounts";
 
 export default function Workspace({ tab }: { tab: TabId }) {
-  const { loaded, busy, error } = useLiaison();
+  const { loaded, busy, error, canManageAccounts } = useLiaison();
 
   if (!loaded) {
     return (
@@ -37,6 +44,7 @@ export default function Workspace({ tab }: { tab: TabId }) {
         {tab === "students" && <StudentsView />}
         {tab === "allocation" && <AllocationView />}
         {tab === "emails" && <EmailsView />}
+        {tab === "accounts" && canManageAccounts && <AccountsView />}
       </div>
     </>
   );

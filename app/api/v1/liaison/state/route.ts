@@ -5,7 +5,7 @@ import { readState, resetState } from "@/services/liaison/db";
 import { stateResponse } from "@/services/liaison/respond";
 
 export async function GET(request: NextRequest) {
-  const denied = requireRole(request, "liaison", "admin");
+  const denied = requireRole(request, "liaison", "admin", "member");
 
   if (denied) {
     return denied;
